@@ -11,9 +11,9 @@ A command line tool for header generation is included assist with constructing h
 * Retain counted objects
 * Dynamic Array and Dictionary
 * Virtual functions obj_ & super_
-* Define new Classes and Subclasses
+* Define new classes and subclasses
 * Destructors and Constructors
-* String Constant Objects Os("string")
+* String constant objects Os("string")
 * Header Generator included
 
 ## 🟤 Requirements
