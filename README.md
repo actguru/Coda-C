@@ -18,7 +18,7 @@ A command line tool for header generation is included assist with constructing h
 
 ## 🟤 Requirements
 
-* gcc/clang
+* gcc or clang
 
 ## 🟢 Building
 
