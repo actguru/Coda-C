@@ -3,12 +3,18 @@ Object Oriented Programming in C
 
 ## ⭐️ The Coda-C Library ⭐️
 
-unc
+This library provides the tools to write OOP directly in C, without any pre-processing.
+A command line tool for header generation is included assist with constructing headers.
 
 ## 🔵 Features:
 
-* Supports ..
 * Retain counted objects
+* Dynamic Array and Dictionary
+* Virtual functions obj_ & super_
+* Define new Classes and Subclasses
+* Destructors and Constructors
+* String Constant Objects Os("string")
+* Header Generator included
 
 ## 🟤 Requirements
 
