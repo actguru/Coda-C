@@ -25,3 +25,7 @@ A command line tool for header generation is included assist with constructing h
 You need a modern C compiler. A Makefile is provided to install the dynamic library, headers, and 'coda-h' in /usr/local or /usr for Linux.
 Note:  For Linux, "sudo ldconfig" should be run after "sudo make install".
 
+## 🟣 Examples
+
+Compile examples with "cc FILE.c -lcoda-c" after installing the library.
+
