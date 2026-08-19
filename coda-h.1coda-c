@@ -1,0 +1,50 @@
+.Dd August 19, 2026
+.Dt CODA-H "" "Coda-C"
+.Os Multiplatform
+.Sh NAME
+.Nm coda-h
+.Nd Header Generator (Version 6.1)
+.Sh SYNOPSIS
+.Nm
+.Op option ...
+.Sh DESCRIPTION
+.Nm
+is used to generate headers for coda-c source files (*.c) in a single working folder.
+The following files may be created: \fIcoda_generated.H\fR, \fIcoda_private.H\fR, \fIcoda_generated.c\fR.
+The program can generate function prototypes, class and signature definitions,
+prototypes for macro defined functions, and passthru header definitions, etc.
+.sp
+.Nm
+without any arguments will generate headers if the file "coda.h" exists.
+.Bl -tag -width "helpxx"
+.It Fl h
+Show usage information.
+.It Fl f
+force header generation without a "coda.h" file
+.It Fl n
+create a "coda.h" file and generate headers
+.It Fl v
+report additional information while processing
+.It Fl q
+report less information while processing
+.It Fl l
+check headers lines for white at end of lines (*.h)
+.El
+.Pp
+.sp
+If the keyword \fI"PRIVATE"\fR also appears on a line used to generate definitions, then these definitions
+will be directed to the file \fIcoda_private.H\fR.
+.sp
+Lines starting with the C inline comment and a pipe symbol \fI"//|"\fR have these three characters
+removed and are recorded in a header file.
+.sp
+Lines starting with the C inline comment and a greater than symbol \fI"//>"\fR symbol operate as above
+except these lines are processed first and wind up at the top of the header.
+.sp
+For regular C function to be prototyped they must start at the start of line without proceeding white space.
+.sp
+Macros like \fICodaStatic()\fR (used to embed files) and \fICodaLink()\fR (used to force linkage)
+will generate additional C code.
+.sp
+.Sh COPYRIGHT
+Copyright (c) 2026  Stephen M. Jones, Affero GPL 3.
