@@ -199,7 +199,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	#define propertyO_(type,var) property$(type,var,self->var ,setO(self->var,value))
 	#define propertyO$(type,var) property$(type,var,self$->var,setO(self$->var,value))
 
-	#define CodaStatic(glob,file,intvar) glob; intvar=OBind1_2(glob,length)
+	#define CodaStatic(glob,file) glob
 
 	#define Array_add(aaa,ooo)  Array_addObject(aaa,ooo)
 	#define Array_take(aaa,ooo) Array_takeObject(aaa,ooo)

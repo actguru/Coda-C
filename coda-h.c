@@ -1,4 +1,4 @@
-/* www.coda-c.com  codah.c
+/* www.coda-c.com  coda-h.c
 
 Copyright (C) 2026 Stephen M. Jones
 
@@ -163,7 +163,7 @@ void zdtclt16(char *a);
 int chpospar(char c,char *a) {
 	char *cp; int deep=0;
 
-	if (c==')')	++deep;	/* looking for matching one */
+	if (c==')')	++deep;
 
 	for(cp=a; *a; ++a)	{
 		if (*a=='(') ++deep;
@@ -416,7 +416,7 @@ int installText(char *temp,char *file) {
 		int lno=0,diff=0;
 		for(lno=1;EOF!=file_getCs(is1,buf1,1024);++lno) {
 			if (EOF==  file_getCs(is2,buf2,1024)) { diff=1; break; }
-			if (cs_prefix("// ",buf1) && cs_prefix("// ",buf2) && lno<=6) continue; // ignore time info XXX
+			if (cs_prefix("// ",buf1) && cs_prefix("// ",buf2) && lno<=6) continue;
 			if (!cs_exact(buf1,buf2)) { diff=1; break; }
 			}
 		if (EOF!=file_getCs(is2,buf2,1024)) diff=1;
@@ -482,7 +482,7 @@ static bool proto2define(const char *frag) {
 	cleanO Char temp=Char_Value(frag);
 	cs_trim(temp); if (!cs_prefix("class",temp)) return(0);
 	cs_copy(temp,temp+cs_length("class")); if (*temp!=' ' && *temp!='\t') return(0);
-	int pos=cs_pos("//",temp); if (pos!=EOF) temp[pos]=0; // comment chop
+	int pos=cs_pos("//",temp); if (pos!=EOF) temp[pos]=0;
 	cs_trim(temp);
 	if (cc_inString(' ',temp) || cc_inString('\t',temp)) return(0);
 	freeO(theClass); theClass=keepO(temp);
@@ -788,14 +788,14 @@ void pointer_sort(pointer base,int nel,void *IfunVVC,void *context) {
 
 Obj codaLink(char *str,char *file,int lno,char *org) {
 	cs_trim(str);
-	printSsrc(" void* CodaLink_%s=%s; // %s\n",str,str,file); // ,lno); // watch auto-protos
+	printSsrc(" void* CodaLink_%s=%s; // %s\n",str,str,file);
 	returnOK;
 	}
 
 Obj codaLinkX(char *str,char *file,int lno,char *org) {
 	cs_trim(str);
 	printSsrc("	extern void %s();\n",str);
-	printSsrc(" void* CodaLink_%s=%s; // %s\n",str,str,file); // ,lno); // watch auto-protos
+	printSsrc(" void* CodaLink_%s=%s; // %s\n",str,str,file);
 	returnOK;
 	}
 
@@ -905,8 +905,8 @@ void noedit(FILE *os,char *file) {
 
 	fprintf(os,"// +------------------------------------------------------------+\n");
 	fprintf(os,"// | Coda created file: %-20.20s @ %-16.16s |\n",file,dates);
-	fprintf(os,"// | Editing this file has been prohibited by the Vulcan High   |\n");
-	fprintf(os,"// | Council, due to the illogical nature of such actions. $1&1 |\n");
+	fprintf(os,"// |                                                            |\n");
+	fprintf(os,"// | Created with the Coda-C Header Generator                   |\n");
 	fprintf(os,"// +------------------------------------------------------------+\n");
 	}
 
@@ -962,11 +962,11 @@ Obj osig(char *str,char *file,int lno,char *ooo) {
 		while(cc_isWhite(*comment)) ++comment;
 		}
 
-	printDefs("	extern ConstChar sig_%s; // Signature Key // %s\n",str,comment); // ,lno);
+	printDefs("	extern ConstChar sig_%s; // Signature Key // %s\n",str,comment);
 
 	if (!sigArray) sigArray=newO(Array);
 	Char siggy=(!newsig ? Char_F("	%.*s // Call Signature // %s\n",orglen,org,comment)
-						: Char_F("	%.*s%s // Call Signature // %s\n",orglen,org,extra,comment) ); // ,lno
+						: Char_F("	%.*s%s // Call Signature // %s\n",orglen,org,extra,comment) );
 	Array_take(sigArray,siggy);
 
 	if (verbose) codaMsg("OSig(%s)",str);
@@ -1187,9 +1187,9 @@ int stripcomm(char *a,int incomm,char *file,int lno) {
 		}
 	for(char *cp=a;1;) {
 		pos=cs_posSyntax("/*",cp); if (pos==EOF) break;
-		int ssc=cs_posSyntax("//",cp); // commented(//) comment("/*") -- compiler ignores("/*")
+		int ssc=cs_posSyntax("//",cp);
 		if (ssc!=EOF && ssc<pos) {
-			if (file) codaMsg("Note: Commented(//) comment(/*) file: %s:%d.",file,lno); // optional diag!
+			if (file) codaMsg("Note: Commented(//) comment(/*) file: %s:%d.",file,lno);
 			return(0);
 			}
 		cp+=pos;
@@ -1251,7 +1251,7 @@ static bool isToken1(char *bb) {
 	if (cc=='_' || (cc>='A' && cc<='Z') || (cc>='a' && cc<='z')) ;
 	  else return(0);
 
-	int pos=cs_posSyntax("//",bb); if (pos!=EOF) bb[pos]=0; // chop comments XXX
+	int pos=cs_posSyntax("//",bb); if (pos!=EOF) bb[pos]=0;
 	cs_rightTrim(bb);
 
 	if (EOF!=cc_posSyntax(';',bb)) return(0);
@@ -1286,7 +1286,7 @@ Obj proto1(char *a,int must,char *path,int lno) {
 
 	int isPriv=(cs_pos("PRIVATE",a)!=EOF);
 	int k=cc_pos('=',a);
-	int jj=cs_pos("//",a); // position of 1st comment
+	int jj=cs_pos("//",a);
 	int bb=cc_pos('{',a);
 	if (k!=EOF && (jj==EOF || k<jj) && (bb==EOF || k<bb)) {
 		char *comm=""; if (jj!=EOF) comm=a+jj;
@@ -1311,7 +1311,7 @@ Obj proto1(char *a,int must,char *path,int lno) {
 		}
 
 	int isMacro=(cs_pos("MACRO",a)!=EOF);
-	k=cs_pos("//",a); if (k==EOF) k=cs_length(a); // see if commented out.
+	k=cs_pos("//",a); if (k==EOF) k=cs_length(a);
 	int j=cc_pos('(',a);
 	if (j==EOF)	{ if (must) OAbort("can't locate proceedure OPEN!(%s)",path); returnOK; }
 	if (k<j)	{ if (must) OAbort("proc-open is commented out(%s)",path); returnOK; }
@@ -1416,15 +1416,14 @@ Obj okString=Os("Ok");
 Obj codaStatic(char *str,char *srcfile,int lno,char *org) {
 
 	cleanO Array list=Char_Split(str,",");
-	if (Array_count(list)!=3) {
-		Msg_("%s; must have 3 args: global_name, file, intvar",__func__);
+	if (Array_count(list)!=2) {
+		Msg_("%s; must have 2 args: global_name, file",__func__);
 		returnOK;
 		}
 	Char name=Array_sub(list,0); cs_trim(name);
-	Char file=Array_sub(list,1); cs_rmc(file,'\"'); cs_trim(file); // remove quotes if there
-	Char vary=Array_sub(list,2); cs_trim(vary);
+	Char file=Array_sub(list,1); cs_rmc(file,'\"'); cs_trim(file);
 
-	if (verbose) codaMsg(">>Coda*Static(glob=%s,file=%s,%s=LENGTH)",name,file,vary);
+	if (verbose) codaMsg(">>Coda*Static(glob=%s,file=%s,%s_length=LENGTH)",name,file,name);
 
 	Void blob=Void_FromFile(file);
 	if (!blob) OAbort("codaStatic: Can't read(%s)",file);
