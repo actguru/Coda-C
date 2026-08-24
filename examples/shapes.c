@@ -1,6 +1,7 @@
+// Coda-C subclass examples
 
 	#include <coda-c.h> // shapes.c  08/20/2026
-	#include <math.h>   // Coda-C subclass examples
+	#include <math.h>
 
 	struct Shape_ { Char color; };
 #define class Shape
@@ -57,6 +58,8 @@ void print_shape_details(Obj shape) { // This function accepts any subclass of S
     print_shape_details(my_circle);
     print_shape_details(my_rectangle);
 	}
-// OUTPUT:
-// ---       Circle  Details  Color:Blue      Area: 78.54  Perimeter: 31.42  ---
-// ---    Rectangle  Details  Color:Green     Area: 24.00  Perimeter: 20.00  ---
+
+/* OUTPUT:
+---       Circle  Details  Color:Blue      Area: 78.54  Perimeter: 31.42  ---
+---    Rectangle  Details  Color:Green     Area: 24.00  Perimeter: 20.00  ---
+*/

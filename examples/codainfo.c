@@ -1,3 +1,4 @@
+// Displaying: Classes, Signatures, and Versions
 	#include <coda-c.h>
 
 int main() {
@@ -43,25 +44,26 @@ int main() {
 	}
 
 
-// OUTPUT
+/* OUTPUT:
 
-// === Coda-C Registered Classes
-// Class: CArray          CArray[0] <Dynamic pointer array>
-// Class: Array           Array[0] <Dynamic object array>
-// Class: Char            Char[1]="" aka char*
-// Class: ConstChar       ConstChar[1]="" aka char*
-// Class: Dictionary      Dictionary[0] <Keyword array>
-// Class: CDictionary     CDictionary[0] <C Keyword array of raw pointers>
-// Class: Keyword         Keyword[8+1] { : (0)}
-// Class: Pointer         Pointer[1] aka void**
-// Class: Root            *** root class ***
-// Class: Void            *** root class ***
-// 
-// === Coda-C Registered Signatures
-// Info(), ToString(), xmlTag(), ToDelimiter(), ToStringSub(), get_count(), subInt(), 
-// NewBlock(), addObject(), removeLast(), removeObject(), removeAll(), set_name(), get_name(), 
-// FromString(), AllKeys(), setKey(), subKey(), removeKey(), 
-// 
-// === Coda-C Registered Versions
-// Coda-C: 3.0, www.coda-c.com, Copyright (c) 2026  Stephen M. Jones, Affero GPL 3.
+=== Coda-C Registered Classes
+Class: CArray          CArray[0] <Dynamic pointer array>
+Class: Array           Array[0] <Dynamic object array>
+Class: Char            Char[1]="" aka char*
+Class: ConstChar       ConstChar[1]="" aka char*
+Class: Dictionary      Dictionary[0] <Keyword array>
+Class: CDictionary     CDictionary[0] <C Keyword array of raw pointers>
+Class: Keyword         Keyword[8+1] { : (0)}
+Class: Pointer         Pointer[1] aka void**
+Class: Root            *** root class ***
+Class: Void            *** root class ***
 
+=== Coda-C Registered Signatures
+Info(), ToString(), xmlTag(), ToDelimiter(), ToStringSub(), get_count(), subInt(), 
+NewBlock(), addObject(), removeLast(), removeObject(), removeAll(), set_name(), get_name(), 
+FromString(), AllKeys(), setKey(), subKey(), removeKey(), 
+
+=== Coda-C Registered Versions
+Coda-C: 3.0, www.coda-c.com, Copyright (c) 2026  Stephen M. Jones, Affero GPL 3.
+
+*/

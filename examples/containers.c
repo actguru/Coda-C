@@ -1,4 +1,5 @@
-	#include <coda-c.h> // demonstrate "ToContainer()" and Object_Counter
+// Demonstrate "ToContainer()" and Object_Counter diagnostics
+	#include <coda-c.h>
 
 #define class Crazy
 CodaClassZerosC();
@@ -33,3 +34,10 @@ int main() {
 	return 0;
 	}
 
+/* OUTPUT:
+Object Count: 7
+Array list:  (red, blue, green, <Null>, Crazy[7], Void[5], {Key2 : 7.89, Key1 : 3.14})
+list info.:  Array[7] <Dynamic object array>
+Object Count: 7
+Final  Count: 0
+*/

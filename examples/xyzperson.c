@@ -1,3 +1,4 @@
+// Calling superclass virtual functions
 	#include <coda-c.h>
 	int cc_toCap(int c)    { return( c>='a' && c<='z' ? c-32 : c); }
 	void cs_cap(char *str) { while(*str) { *str =cc_toCap(*str); ++str; } }
@@ -34,6 +35,7 @@ int main() {
 	XyzPerson_sayHello(sss);
 	}
 
-// OUTPUT:
-// Hello, world!
-// HELLO, WORLD!
+/* OUTPUT:
+Hello, world!
+HELLO, WORLD!
+*/
