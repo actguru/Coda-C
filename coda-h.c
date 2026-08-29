@@ -836,13 +836,11 @@ int main(int argc,char **argv) {
 	if (priv_os && !quiet) Msg_("Proto types as: %s.",priv_file);
 	if (ssrc_os && !quiet) Msg_("Generated 'C'.: %s.",ssrc_file);
 
-	int changed=1;
 	if (closeAll()) {
 		Msg_("Updated");
 		}
 	  else	{
 		Msg_("No changes.");
-		changed=0;
 		}
 
 	return(0);
@@ -1366,6 +1364,7 @@ Obj proto1(char *a,int must,char *path,int lno) {
 				nout+=fprintf(os,"%s(",(aka?aka:a));
 				nout+=fprintf(os,"%s",arglist);
 				nout+=fprintf(os,")%s%s;",ap,endw);
+				if (nout>=4000) Die_("Line too long? nout %d",nout);
 				fprintf(os,"%s%s\n",(*comm?" ":""),comm);
 				autoGetter(os,(aka?aka:a),comm);
 				if (*ap) codaMsg("NOTE: old style comment attribute(%s) %s:%d",ap,path,lno);
