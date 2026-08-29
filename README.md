@@ -15,6 +15,7 @@ A command line tool for header generation is included assist with constructing h
 * Destructors and Constructors
 * String constant objects Os("string")
 * Header Generator included: $ coda-h
+* Includes usage information in PDF format.
 
 ## 🟤 Requirements
 
