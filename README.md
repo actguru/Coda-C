@@ -14,7 +14,7 @@ A command line tool for header generation is included assist with constructing h
 * Define new classes and subclasses
 * Destructors and Constructors
 * String constant objects Os("string")
-* Header Generator included
+* Header Generator included: $ coda-h
 
 ## 🟤 Requirements
 
@@ -22,7 +22,7 @@ A command line tool for header generation is included assist with constructing h
 
 ## 🟢 Building
 
-You need a modern C compiler. A Makefile is provided to install the dynamic library, headers, and 'coda-h' in /usr/local or /usr for Linux.
+You need a modern C compiler. A Makefile is provided to install the dynamic library, header, and 'coda-h' in /usr/local or /usr for Linux.
 Note:  For Linux, "sudo ldconfig" should be run after "sudo make install".
 
 ## 🟣 Examples
