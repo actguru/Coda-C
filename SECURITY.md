@@ -20,9 +20,12 @@ Public issues immediately expose the exploit to malicious actors before a patch 
 
 ### How to Report
 
+Please email your report to **support@actmac.com**.
+<!--
 Please use one of the following methods to report a vulnerability securely:
 
 1. **GitHub Private Vulnerability Reporting (Preferred):** 
    Navigate to the **Security** tab of this repository on GitHub, click **Vulnerability reporting**, and select **Report a vulnerability** to submit a private report.
 2. **Email:** 
    If you cannot use GitHub's interface, please email your report to **support@actmac.com**. 
+-->
