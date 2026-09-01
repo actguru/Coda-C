@@ -11,8 +11,6 @@ A command line tool for header generation is included assist with constructing h
 * Retain counted objects
 * Dynamic Array and Dictionary
 * Virtual functions obj_ & super_
-* Define new classes and subclasses
-* Destructors and Constructors
 * String constant objects Os("string")
 * Header Generator included: $ coda-h
 * Includes usage information in PDF format.
