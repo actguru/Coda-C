@@ -129,7 +129,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 		CLASS OClass(CLASS)=(pointer)(&OBind1_2(Meta,CLASS).COData); \
 		ORegisterClass(CLASS)
 
-	enum { bits_Root = -1, bits_Trans =	-2 };
+	enum { bits_Root = -1, bits_Trans = -2, bits_Zerok = 3 };
 
 	#define	sizeat(type) sizeof(*((type)0))
 
@@ -178,6 +178,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 #define CodaClassZerosC() CodaClassZeros(dtor,itor,kize,etor,ekeep,bits)
 #define CodaClass_Trans() enum { OBind1_2M(class,bits)=bits_Trans }
 #define CodaClass_Root()  enum { OBind1_2M(class,bits)=bits_Root }
+#define CodaClass_Zerok() enum { OBind1_2M(class,bits)=bits_Zerok }
 #define CodaClassTransC() CodaClassZeros(dtor,itor,kize,etor,ekeep); CodaClass_Trans()
 
 	#define ei else if

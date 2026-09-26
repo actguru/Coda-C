@@ -20,7 +20,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 */
 	#define QWebsite "www.coda-c.com"
 	#define QCopyYears	"2026"
-	#define QVersion	"3.0"
+	#define QVersion	"3.1"
 
 	#include "./coda-c.h"
 	#define _GNU_SOURCE 1
@@ -810,7 +810,7 @@ Obj Memory_alocO(int size) { return Memory_aloc(size,0,0); }
 _Atomic huge Object_Counter=0;
 
 Obj Memory_aloc(int size,CodaCLASS *clas,int extra) {
-	if (size<=0) Die_("size %d ? class: %s",size,(clas ? clas->kClass : "?ZERO?"));
+	if (size<0) Die_("size %d ? class: %s",size,(clas ? clas->kClass : "?ZERO?"));
 	CodaStructMeta *first=alocC(extra+CodaMetaSize+size);
 	CodaStructMeta *meta=first; if (extra) meta= (CodaStructMeta *) ( ((char *)first) + extra);
 	meta->metasize=extra+CodaMetaSize;
@@ -917,12 +917,15 @@ static pointer Memory_pack(void *enclosed,int newsize,void *clas) {
 
  static Obj Memory_newOOR(CodaCLASS *clas,int count,int extra) {
 	if (!clas) Die_(">>>use alocO() instead of newO() to make VOID class objects!");
-	assert(clas!=NULL && count>0 && extra>=0);
+	assert(clas!=NULL && extra>=0);
+	assert(count>=0);
+	if (count==0 && clas->bits!=bits_Zerok)
+		Die_("You can't use count==0 for this class(%s). see: bits_Zerok",clas->kClass);
 	assert(clas->superNel>=1); assert(clas->size>0);
 	int size=count*clas->size,trans=0;
 	if (clas->kize) size=clas->kize+count;
 	int supNel=clas->superNel;
-	if (clas->bits<0)	{
+	if (clas->bits==bits_Trans) {
 		size=0; trans=1; assert(count>=1 && supNel>=1);
 		if (supNel!=1 && count!=1)
 			Die_("You can't create multiple of Arrayed Classes(%d * %d)",supNel,count);
@@ -948,7 +951,6 @@ static pointer Memory_pack(void *enclosed,int newsize,void *clas) {
 Obj Memory_newOO(CodaCLASS *clas,int count) { return Memory_newOOR(clas,count,0); }
 
 Obj Memory_newO(Obj obj,int nel) {
-	if (nel<1) Die_("newOC() called with count=%d.",nel);
 	return Memory_newOO(Memory_class(obj),nel);
 	}
 
@@ -965,7 +967,7 @@ struct CodaStructMeta_ *Memory_metanext( struct CodaStructMeta_ *meta) {
 		}
 
 CodaCLASS* baseClass(CodaCLASS* clas) {
-	if (clas) while(clas->bits<0) {
+	if (clas) while(clas->bits==bits_Trans) {
 		clas=clas->superClass;
 		if (!clas) break;
 		}
