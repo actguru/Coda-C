@@ -18,6 +18,8 @@ You should have received a copy of the GNU Affero General Public License
 along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 
 */
+	#define _GNU_SOURCE 1
+
 	#include "./coda-c.h"
 	#define defer_call(fun,ptr) $CLEANUP(defer_call_cleanup) \
 		pointer OBind1_2M(defer_,__LINE__)[2]={fun,ptr}; \
