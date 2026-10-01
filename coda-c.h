@@ -66,7 +66,8 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	#define $class(name) OBind1_2M(class,name)
 	#define $boot(name) static $CONSTRUCTOR void $class(name)(void)
 
-	typedef void (*DTOR)(pointer,pointer);
+	typedef void (*DTOR1)(pointer);
+	typedef void (*DTOR2)(pointer,pointer);
 
 	#define CodaClassDef(clas,stor,...) typedef stor* clas; \
 		extern clas OBind1_2(Class,clas); \
@@ -75,18 +76,18 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	typedef struct CodaCLASS_ CodaCLASS;
 
 	struct CodaCLASS_ {
-		DTOR dtor;
+		DTOR1 dtor;
 		char *kClass;
 		CodaCLASS *superClass;
-		DTOR etor;
+		DTOR1 etor;
 		int  size;
 		short superNel;
 		short bits;
-		DTOR itor;
+		DTOR1 itor;
 		int  kize,spare;
 		pointer classObject;
 		pointer custom;
-		DTOR ekeep;
+		DTOR1 ekeep;
 		struct Dictionary_* properties;
 		pointer spare2,spare3,spare4;
 		};
@@ -111,25 +112,25 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	#define Coda_Class(CLASS,CodaType,SUPER,...) \
 		static struct CodaPublicCORaw_ OBind1_2(Meta,CLASS); \
 		CodaCLASS OBind1_2(Isa,CLASS)={ \
-			(DTOR)OBind1_2(CLASS,dtor), \
+			(DTOR1)OBind1_2(CLASS,dtor), \
 			#CLASS,\
 			SUPER, \
-			(DTOR)OBind1_2(CLASS,etor), \
+			(DTOR1)OBind1_2(CLASS,etor), \
 			sizeof(CodaType), \
 			CodaClass_SUPERNEL, \
 			OBind1_2(CLASS,bits), \
-			(DTOR)OBind1_2(CLASS,itor), \
+			(DTOR1)OBind1_2(CLASS,itor), \
 			OBind1_2(CLASS,kize), \
 			0, \
 			&OBind1_2(Meta,CLASS).COData, \
 			(pointer)CodaClass_CUSTOM, \
-			(DTOR)OBind1_2(CLASS,ekeep), \
+			(DTOR1)OBind1_2(CLASS,ekeep), \
 			}; \
 		static struct CodaPublicCORaw_ OBind1_2(Meta,CLASS)={{&OBind1_2(Isa,CLASS),"",CodaMetaSize},""}; \
 		CLASS OClass(CLASS)=(pointer)(&OBind1_2(Meta,CLASS).COData); \
 		ORegisterClass(CLASS)
 
-	enum { bits_Root = -1, bits_Trans = -2, bits_Zerok = 3 };
+	enum { bits_Root = -1, bits_Trans = -2, bits_Zerok = 3, bits_Etor2 = 4 };
 
 	#define	sizeat(type) sizeof(*((type)0))
 
@@ -274,7 +275,7 @@ CodaClassDef(Void,void,0);
 	#define countO(obj)			Memory_count(obj)
 	#define sizeO(obj)			Memory_size(obj)
 	#define classO(obj)			Memory_class(obj)
-	#define kindO(obj)			Memory_kind(obj)
+	#define kindO(obj)			classO(obj)->kClass
 	#define	superO(obj)			Memory_superObject(obj)
 	#define Msg_(...) Msg_Object(Char_F(__VA_ARGS__),0)
 	#define Log_(...) Msg_Object(Char_F(__VA_ARGS__),1)
@@ -344,6 +345,8 @@ Char CMux_Diag(pointer cmux,char *name);
 Char Dictionary_Diag(Dictionary dict);
 Char Array_Diag(Array array);
 bool OisaClass(Obj obj,Obj classobj);
+void etor_container(Obj obj,Obj self);
+void ekeep_container(Obj obj,Obj self);
 int Dictionary_get_count(Dictionary self);
 #define Dictionary_count Dictionary_get_count
 void Dictionary_setKey(Dictionary self,char *key,Obj obj);
@@ -381,9 +384,6 @@ void Memory_free(Obj obj);
 Obj Memory_keep(Obj obj);
 void Memory_clean(const void *vp);
 CodaCLASS* Memory_class(Obj obj);
-DTOR Memory_etor(Obj obj);
-DTOR Memory_ekeep(Obj obj);
-char* Memory_kind(Obj obj);
 int4 Memory_size(Obj obj);
 int4 Memory_count(Obj obj);
 CodaCLASS* Memory_reclass(Obj obj,CodaCLASS *clas);

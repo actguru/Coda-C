@@ -20,7 +20,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 */
 	#define QWebsite "www.coda-c.com"
 	#define QCopyYears	"2026"
-	#define QVersion	"3.1"
+	#define QVersion	"3.2"
 
 	#include "./coda-c.h"
 	#define _GNU_SOURCE 1
@@ -47,14 +47,14 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	static_assert(EOF==(-1),"EOF has a bad value.");
 
 Obj CArray_insertAt(CArray self,int index,Obj obj);
-void Array_dtor(Array self,CodaCLASS *clas);
+void Array_dtor(Array self);
 void Array_itor(Array self);
 Char Char_FromString(Char self,char *str);
 extern CDictionary Class_dictionary_dict;
 void CMux_dtor(pointer cmux);
 void *CMux_Data4Key(pointer cmux,char *key);
 void *CMux_KeyData(pointer cmux,char *key,pointer data);
-void Dictionary_dtor(Dictionary self,CodaCLASS *clas);
+void Dictionary_dtor(Dictionary self);
 extern CArray Global_objectPointers;
 Obj Memory_newOO(CodaCLASS *clas,int count);
 Char Root_Info(Root self);
@@ -97,10 +97,9 @@ static int count2nel(int count) {
 	}
 	#define eleAddr(ptr,index) (ptr->alla + ptr->zerox + index)
 
-static void C_Array_Release(Array self,DTOR etor,int start,int nel) {
-	if (!etor) return;
+static void C_Array_Release(Array self,int start,int nel) {
 	Pointer vec=(void *)eleAddr(self,start);
-	for(int j=nel-1;j>=0;--j) etor(vec[j],self);
+	for(int j=nel-1;j>=0;--j) etor_container(vec[j],self);
 	}
 
 static void CArray_copyBlock(CArray self,int dix,int count,Pointer block) {
@@ -131,7 +130,7 @@ static void CArray_Smaller(CArray dest) {
 void Array_removeBlock(Array self,int dix,int count) {
 	if (count<1) return;
 	assert(dix>=0 && dix+count<=_ count);
-	C_Array_Release(self,Memory_etor(self),dix,count);
+	C_Array_Release(self,dix,count);
 	if (dix==0)				_ zerox+=count;
 	ei (dix+count==_ count)	;
 	else CArray_copyBlock(self,dix,_ count-dix-count,eleAddr(self,dix+count));
@@ -196,9 +195,9 @@ method$(Char,ToString) { return Char_F("%s[%d]",kindO(self),_ count); }
 
 #define class Array
 
-void $(dtor,CodaCLASS *clas) {
+void $(dtor) {
 	freeO(_ name); _ name=0;
-	C_Array_Release(self,clas->etor,0,_ count);
+	C_Array_Release(self,0,_ count);
 	freeC(_ alla);
 	}
 
@@ -256,13 +255,13 @@ Array Array_NewBlock(Array proto,int count,pointer block) {
 	}
 
 void $(insertBlock,int index,int count,pointer block) {
-	Pointer source=block; DTOR keeper=Memory_ekeep(self);
-	if (keeper) for(int j=0;j<count;++j) keeper(source[j],self);
+	Pointer source=block;
+	for(int j=0;j<count;++j) ekeep_container(source[j],self);
 	Array_takeBlock(self,index,count,block);
 	}
 
 Obj $(insertAt,int index,Obj obj) {
-	DTOR keeper=Memory_ekeep(self); if (keeper) keeper(obj,self);
+	ekeep_container(obj,self);
 	return CArray_insertAt(self,index,obj);
 	}
 
@@ -284,8 +283,8 @@ void $(removeLast) {
 
 Obj $(replaceAt,int ix,Obj obj) {
 	Pointer ptr=Array_rawAddress(self); assert(ix>=0 && ix<Array_count(self));
-		DTOR keeper=Memory_ekeep(self); if (keeper) keeper(obj,self);
-		DTOR etor=Memory_etor(self); if (etor) etor(ptr[ix],self);
+		ekeep_container(obj,self);
+		etor_container(ptr[ix],self);
 		ptr[ix]=obj;
 	return(obj);
 	}
@@ -540,6 +539,22 @@ bool OisaClass(Obj obj,Obj classobj) {
 	return(0);
 	}
 
+void etor_container(Obj obj,Obj self) {
+	CodaStructMeta *meta=obj2meta(self);
+	CodaCLASS *clas=meta->clas;
+	if (!clas->etor) return;
+	if (clas->bits!=bits_Etor2) clas->etor(obj);
+	  else { DTOR2 etor=(DTOR2)clas->etor; etor(obj,self); }
+	}
+
+void ekeep_container(Obj obj,Obj self) {
+	CodaStructMeta *meta=obj2meta(self);
+	CodaCLASS *clas=meta->clas;
+	if (!clas->ekeep) return;
+	if (clas->bits!=bits_Etor2) clas->ekeep(obj);
+	  else { DTOR2 ekeep=(DTOR2)clas->ekeep; ekeep(obj,self); }
+	}
+
 typedef void OSig(setKey)(Obj dict,char *key,Obj obj) ; sig_(setKey);
 typedef Obj  OSig(subKey)(Obj dict,char *key) ;         sig_(subKey);
 typedef bool OSig(removeKey)(Obj dict,char *key) ;      sig_(removeKey);
@@ -560,12 +575,12 @@ typedef Char OSig(xmlTag)(Obj obj);                     sig_(xmlTag);
 		struct CMux_ mux;
 		};
 
-void $(dtor,CodaCLASS *clas) {
+void $(dtor) {
 	if (_ mux.hasher) CMux_dtor(& _ mux);
-	csKeyword *ptr,*nxt=0; DTOR etor=clas->etor;
+	csKeyword *ptr,*nxt=0;
 	for(ptr=_ list;ptr;ptr=nxt) {
 		nxt=ptr->nxt;
-		if (etor) etor(ptr->data,self);
+		etor_container(ptr->data,self);
 		freeC(ptr);
 		}
 	freeO(_ name); _ name=0; _ list=0; _ mux.count=0;
@@ -584,12 +599,11 @@ int $(get_count) {
 void $(setKey,char *key,Obj obj) {
 	if (_ mux.hasher) { DictHash_keyobj(self,key,obj); return; }
 	if (!obj) { _$(removeKey,key); return; }
-	DTOR keeper=Memory_ekeep(self); if (keeper) keeper(obj,self);
+	ekeep_container(obj,self);
 	csKeyword *ptr;
 	for(ptr=_ list;ptr;ptr=ptr->nxt) { if (cs_exact(key,ptr->key)) break; }
 	if (ptr) {
-		DTOR etor=Memory_etor(self);
-		if (etor) etor(ptr->data,self);
+		etor_container(ptr->data,self);
 		}
 	  else {
 		++_ mux.count;
@@ -606,7 +620,7 @@ bool $(removeKey,char *key) {
 	csKeyword *ptr,*pre;
 	for(pre=0,ptr=_ list;ptr;pre=ptr,ptr=ptr->nxt) { if (cs_exact(key,ptr->key)) break; }
 	if (ptr) {
-		DTOR etor=Memory_etor(self); if (etor) etor(ptr->data,self);
+		etor_container(ptr->data,self);
 		if (!pre) _ list=ptr->nxt;
 		  else	  pre->nxt=ptr->nxt;
 		freeC(ptr); --_ mux.count;
@@ -617,7 +631,6 @@ bool $(removeKey,char *key) {
 
 int $(removeObject,Obj obj) {
 	int removed=0;
-	DTOR etor=Memory_etor(self);
 	for(csKeyword *pre=0,*nxt=0,*ptr=_ list;ptr;pre=ptr,ptr=nxt) {
 		nxt=ptr->nxt;
 		if (ptr->data==obj) {
@@ -625,7 +638,7 @@ int $(removeObject,Obj obj) {
 				if (!DictHash_keydel(self,ptr->key)) Die_("Internal error, hash delete failed!");
 				}
 			  else {
-				if (etor) etor(ptr->data,self);
+				etor_container(ptr->data,self);
 				if (!pre) _ list=ptr->nxt;
 				  else	  pre->nxt=ptr->nxt;
 				freeC(ptr); --_ mux.count;
@@ -838,7 +851,7 @@ void Memory_free(Obj obj) {
 		for(int j=0;ptr && j<CodaMaxMeta;ptr=Memory_metanext(ptr),++j) {
 			CodaCLASS *clas=ptr->clas;
 			while (clas) {
-				if (clas->dtor) clas->dtor(meta2obj(ptr),clas);
+				if (clas->dtor) clas->dtor(meta2obj(ptr));
 				if (clas->bits!=bits_Trans) break;
 				clas=clas->superClass;
 				}
@@ -869,12 +882,6 @@ CodaCLASS* Memory_class(Obj obj) {
 	if (!meta->clas) return(&Isa_Void);
 	return(meta->clas);
 	}
-
-DTOR Memory_etor(Obj obj) { return classO(obj)->etor; }
-
-DTOR Memory_ekeep(Obj obj) { return classO(obj)->ekeep; }
-
-char* Memory_kind(Obj obj) { return classO(obj)->kClass; }
 
 int4 Memory_size(Obj obj) {
 	if (!obj) return(0);
@@ -944,7 +951,7 @@ static pointer Memory_pack(void *enclosed,int newsize,void *clas) {
 	  else	{
 		obj=alocOCE(size,clas,extra);
 		}
-	if (clas->itor) clas->itor(obj,clas);
+	if (clas->itor) clas->itor(obj);
 	return(obj);
 	}
 
