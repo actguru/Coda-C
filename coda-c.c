@@ -20,7 +20,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 */
 	#define QWebsite "www.coda-c.com"
 	#define QCopyYears	"2026"
-	#define QVersion	"3.2"
+	#define QVersion	"3.3"
 
 	#include "./coda-c.h"
 	#define _GNU_SOURCE 1
@@ -1175,7 +1175,19 @@ void *ORespond3(Obj obj,char *sel,Obj *spindle,int noDie,CodaCLASS *superOf) {
 	return(noDie==2 ? obj : data);
 	}
 
+	static __thread pointer stack_top=0;
+	huge Coda_stack_max=30000;
+
+	bool Coda_stack_full(bool reset) {
+		if (reset) { stack_top=0; return(0); }
+		pointer stack=alocS(1);
+		if (!stack_top) { stack_top=stack; return(0); }
+		huge usage= (stack_top - stack);
+		return(usage>Coda_stack_max);
+		}
+
 Char ToContainer(Obj container) {
+	if (Coda_stack_full(0)) return Os("?full?");
 	void* hasele=OResponds(container,ToStringSub);
 	void* hastos=OResponds(container,ToString);
 	void* hasdel=OResponds(container,ToDelimiter);

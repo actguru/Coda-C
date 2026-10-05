@@ -1,8 +1,8 @@
 # Apple, Linux, Windows (has install issues) # 08/15/2026
 
-VERSION = 3.2
+VERSION = 3.3
 MAJOR   = 3
-COMPAT  = 3.0
+COMPAT  = 3.3
 
 MACMIN  = 10.8
 
