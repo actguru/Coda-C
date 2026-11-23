@@ -56,11 +56,11 @@ Obj codaDefine(Array files);
 extern int define2_privflag;
 Obj define2(char *a,char *file,int lno);
 Obj define1(char *file);
-Obj define_OAka(char *a,char *file,int lno,char *org);
-Obj define_AkaS(char *a,char *file,int lno,char *org);
+Obj define_OAka(char *a,char *file,int lno,$UNUSED char *org);
+Obj define_AkaS(char *a,char *file,int lno,$UNUSED char *org);
 Obj CodaClass2(char *a,char *file,int lno,char *org);
 Obj CodaClass3(char *a,char *file,int lno,char *org);
-Obj CodaClassX(char *a,char *file,int lno,char *org,bool privdefsXXX);
+Obj CodaClassX(char *a,char *file,int lno,char *org,$UNUSED bool privdefsXXX);
 void setGenOs(Char dgroup);
 int checkGroup(char *var);
 int isGroupCc(int cc,int first);
@@ -114,8 +114,8 @@ Obj OErrorSet(Obj $CONSUMED obj);
 Obj OErrorObject(void);
 Char OError(void);
 void pointer_sort(pointer base,int nel,void *IfunVVC,void *context);
-Obj codaLink(char *str,char *file,int lno,char *org);
-Obj codaLinkX(char *str,char *file,int lno,char *org);
+Obj codaLink(char *str,char *file,$UNUSED int lno,$UNUSED char *org);
+Obj codaLinkX(char *str,char *file,$UNUSED int lno,$UNUSED char *org);
 extern int quiet;
 int main(int argc,char **argv);
 void aboutCoda(void);
@@ -151,7 +151,7 @@ Obj proto1(char *a,int must,char *path,int lno);
 int hasToken1(char *a);
 void autoGetter(FILE *os,char *str,char *comm);
 extern Obj okString;
-Obj codaStatic(char *str,char *srcfile,int lno,char *org);
+Obj codaStatic(char *str,$UNUSED char *srcfile,$UNUSED int lno,$UNUSED char *org);
 Obj printBlob1(Void blob,int asglob,FILE *os);
 int file_nameOk(char *name);
 void codacVersions(bool copyrights);
@@ -248,12 +248,14 @@ Obj codaDefine(Array files) {
 		{ "propertyO_",			property,		0 },
 		{ "propertyO$",			property,		0 },
 		};
-	#define tablenel (sizeof(table)/sizeof(table[0]))
+	static int tablenel=(sizeof(table)/sizeof(table[0]));
 
 int define2_privflag=0;
 
 Obj define2(char *a,char *file,int lno) {
-	char bb[1024]; cs_copy(bb,a);
+	char bb[1024];
+	if (cs_length(a)>=(int)sizeof(bb)-1) OAbort("*** line too long! %s:%d",file,lno);
+	cs_copy(bb,a);
 	int x=cs_pos("//",bb);
 		define2_privflag=cs_inString("PRIVATE",bb);
 		if (x!=EOF) bb[x]=0;
@@ -299,8 +301,9 @@ Obj define1(char *file) {
 	returnOK;
 	}
 
-Obj define_OAka(char *a,char *file,int lno,char *org) {
+Obj define_OAka(char *a,char *file,int lno,$UNUSED char *org) {
 	char b[1024];
+	if (cs_length(a)>=(int)sizeof(b)-1) OAbort("*** line too long! %s:%d",file,lno);
 	cs_parse(b,a,','); cs_trim(a); cs_trim(b);
 	if (!*a || !*b) returnOK;
 	if (!theClass)	OAbort("***: Aka w/o CodaClass! %s:%d",file,lno);
@@ -308,8 +311,10 @@ Obj define_OAka(char *a,char *file,int lno,char *org) {
 	returnOK;
 	}
 
-Obj define_AkaS(char *a,char *file,int lno,char *org) {
-	char b[1024]; cs_parse(b,a,','); cs_trim(a); cs_trim(b); if (!*a || !*b) returnOK;
+Obj define_AkaS(char *a,char *file,int lno,$UNUSED char *org) {
+	char b[1024];
+	if (cs_length(a)>=(int)sizeof(b)-1) OAbort("*** line too long! %s:%d",file,lno);
+	cs_parse(b,a,','); cs_trim(a); cs_trim(b); if (!*a || !*b) returnOK;
 	if (!theClass)	OAbort("***: AkaS w/o CodaClass! %s:%d",file,lno);
 	printDefs("		#define %s_%s(obj,...)	%s_%s(superO(obj),##__VA_ARGS__)\n",theClass,b,a,b);
 	returnOK;
@@ -328,8 +333,8 @@ Obj define_AkaS(char *a,char *file,int lno,char *org) {
 Obj CodaClass2(char *a,char *file,int lno,char *org) { return CodaClassX(a,file,lno,org,1); }
 Obj CodaClass3(char *a,char *file,int lno,char *org) { return CodaClassX(a,file,lno,org,0); }
 
-Obj CodaClassX(char *a,char *file,int lno,char *org,bool privdefsXXX) {
-
+Obj CodaClassX(char *a,char *file,int lno,char *org,$UNUSED bool privdefsXXX) {
+	if (cs_length(a)>=(int)256-1) OAbort("*** line too long! %s:%d",file,lno);
 	char name[256]; cs_parse(name,a,','); cs_trim(a); cs_trim(name);
 	char base[256]; cs_parse(base,a,','); cs_trim(a); cs_trim(base);
 	char supc[256]; cs_parse(supc,a,','); cs_trim(a); cs_trim(supc);
@@ -368,7 +373,7 @@ int checkGroup(char *var) {
 	for(j=0;0!=(cc=var[j]);++j) {
 		if (!isGroupCc(cc,!j)) return(0);
 		}
-	return(j>0);
+	return(j>0 && j<=32);
 	}
 
 int isGroupCc(int cc,int first) {
@@ -589,7 +594,7 @@ void defer_call_cleanup(void *vp) {
 		}
 	}
 
-void defer_NOP(void *vp) { }
+void defer_NOP(void *vp) { (void)vp; }
 
 char* file_ext(char *path) {
 	int dot=cc_revPos('.',path); if (dot==EOF) return("");
@@ -788,13 +793,13 @@ void pointer_sort(pointer base,int nel,void *IfunVVC,void *context) {
 	#endif
 	}
 
-Obj codaLink(char *str,char *file,int lno,char *org) {
+Obj codaLink(char *str,char *file,$UNUSED int lno,$UNUSED char *org) {
 	cs_trim(str);
 	printSsrc(" void* CodaLink_%s=%s; // %s\n",str,str,file);
 	returnOK;
 	}
 
-Obj codaLinkX(char *str,char *file,int lno,char *org) {
+Obj codaLinkX(char *str,char *file,$UNUSED int lno,$UNUSED char *org) {
 	cs_trim(str);
 	printSsrc("	extern void %s();\n",str);
 	printSsrc(" void* CodaLink_%s=%s; // %s\n",str,str,file);
@@ -1414,7 +1419,7 @@ void autoGetter(FILE *os,char *str,char *comm) {
 
 Obj okString=Os("Ok");
 
-Obj codaStatic(char *str,char *srcfile,int lno,char *org) {
+Obj codaStatic(char *str,$UNUSED char *srcfile,$UNUSED int lno,$UNUSED char *org) {
 
 	cleanO Array list=Char_Split(str,",");
 	if (Array_count(list)!=2) {

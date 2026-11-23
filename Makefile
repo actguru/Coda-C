@@ -1,6 +1,6 @@
 # Apple, Linux, Windows (has install issues) # 08/15/2026
 
-VERSION = 3.3
+VERSION = 3.4
 MAJOR   = 3
 COMPAT  = 3.3
 
@@ -39,7 +39,7 @@ CFILES = coda-c.c
 
 OFILES = $(CFILES:.c=.o)
 
-CFLAGS = $(OSCF) -fPIC -std=gnu17 -g0 -O1 -Wall -Wfatal-errors
+CFLAGS = $(OSCF) -fPIC -std=gnu17 -g0 -O1 -Wall -Wfatal-errors -Wextra
 
 THELIB = libcoda-c
 

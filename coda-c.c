@@ -18,22 +18,8 @@ You should have received a copy of the GNU Affero General Public License
 along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 
 */
-	#define QWebsite "www.coda-c.com"
-	#define QCopyYears	"2026"
-	#define QVersion	"3.3"
 
-	#include "./coda-c.h"
 	#define _GNU_SOURCE 1
-
-	#if     WIN32
-		#define malloc_size(xxx)	_msize(xxx)
-		#define timegm _mkgmtime
-	#elif __linux__
-		#include <malloc.h>
-		#define malloc_size(xxx)	malloc_usable_size(xxx)
-	#else
-		#include <malloc/malloc.h>
-	#endif
 
 	#include <stdatomic.h>
 	#include <stdarg.h>
@@ -44,8 +30,17 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	#include <limits.h>
 	#include <errno.h>
 
+	#include <assert.h>
+	#include <stdio.h>
 	static_assert(EOF==(-1),"EOF has a bad value.");
 
+	#define Assert_(e) ((void)((e)?0:Die_Object(Char_F("%s: !True(%s)",__func__,#e),1)))
+
+	#define QWebsite "www.coda-c.com"
+	#define QCopyYears	"2026"
+	#define QVersion	"3.4"
+
+	#include "./coda-c.h"
 Obj CArray_insertAt(CArray self,int index,Obj obj);
 void Array_dtor(Array self);
 void Array_itor(Array self);
@@ -129,7 +124,7 @@ static void CArray_Smaller(CArray dest) {
 
 void Array_removeBlock(Array self,int dix,int count) {
 	if (count<1) return;
-	assert(dix>=0 && dix+count<=_ count);
+	Assert_(dix>=0 && dix+count<=_ count);
 	C_Array_Release(self,dix,count);
 	if (dix==0)				_ zerox+=count;
 	ei (dix+count==_ count)	;
@@ -138,7 +133,7 @@ void Array_removeBlock(Array self,int dix,int count) {
 	CArray_Smaller(self);
 	}
 
-static void CArray_Upgrade(CArray dest,int dix,int count,Pointer block,char *msg) {
+static void CArray_Upgrade(CArray dest,int dix,int count,Pointer block,$UNUSED char *msg) {
 	int capa=(int)llround((dest->count+count)*Array_FACTOR);
 	cleanO CArray grade=CArray_NewCap(capa); assert(grade->nel>dest->count+count);
 		grade->count=dest->count+count;
@@ -153,7 +148,7 @@ static void CArray_Upgrade(CArray dest,int dix,int count,Pointer block,char *msg
 
 void Array_takeBlock(Array self,int index,int count,pointer block) {
 	if (count<1) return;
-	assert(index>=0 && index<=_ count);
+	Assert_(index>=0 && index<=_ count);
 	Char msg=0; int tailcount=_ count - index;
 	if (index==0) { msg="Expand Front";
 		if (count<= _ zerox) {
@@ -282,14 +277,14 @@ void $(removeLast) {
 	}
 
 Obj $(replaceAt,int ix,Obj obj) {
-	Pointer ptr=Array_rawAddress(self); assert(ix>=0 && ix<Array_count(self));
+	Pointer ptr=Array_rawAddress(self); Assert_(ix>=0 && ix<Array_count(self));
 		ekeep_container(obj,self);
 		etor_container(ptr[ix],self);
 		ptr[ix]=obj;
 	return(obj);
 	}
 
-method$(Char,xmlTag) { return Os("array"); }
+method$(Char,xmlTag) { return Os("array"); (void)self; }
 
 int $(removeObject,Obj object) {
 	int removed=0;
@@ -338,7 +333,7 @@ bool $(isaSet) { return(_ name == Os_Set); }
 Char Array_Join(Array array,char *delimiter) {
 	if (!array) return(0);
 	if (!delimiter) delimiter="";
-	int j,total=0,nel=Array_count(array),dsize=cs_length(delimiter),nout=0;
+	int4 j,total=0,nel=Array_count(array),dsize=cs_length(delimiter),nout=0;
 	for(j=0;j<nel;++j) {
 		Obj obj=Array_sub(array,j);
   		if (isa_(obj,Char)) { ++nout; total+=cs_length(obj); }
@@ -355,7 +350,7 @@ Char Array_Join(Array array,char *delimiter) {
 			}
 		}
 	++check;
-	assert(check == total+1+dsize*(nout-1) );
+	Assert_(check == total+1+dsize*(nout-1) );
 	return(blob);
 	}
 typedef Char OSig(ToString)(Obj obj);               sig_(ToString);
@@ -380,16 +375,16 @@ method$(Char,Info) {
 	return Char_F("%s[%d]=\"%s\" aka char*",kindO(self),obj_(get_count,self),b);
 	}
 
-Char $(FromString,char *str) { return Char_Value(str); }
+Char $(FromString,char *str) { return Char_Value(str); (void)self; }
 
 method$(Char,ToString) { return(keepO(self)); }
 
-method$(Char,xmlTag) { return Os("string"); }
+method$(Char,xmlTag) { return Os("string"); (void)self; }
 
 class $(NewBlock,int count,pointer address) {
 	if (count<=0) return(0);
 	class cp=newOC(class,count); memcpy(cp,address,count); return(cp);
-	}
+	(void)self; }
 
 $boot(StephenMJones) { CodaSig(FromString); CodaSig(NewBlock); }
 #undef class
@@ -508,6 +503,40 @@ void *CMux_KeyData(pointer cmux,char *key,pointer data) {
 	return(data);
 	}
 
+	typedef struct csKeyword_ {
+		struct csKeyword_ *nxt;
+		pointer data;
+		char key[0];
+		} csKeyword;
+
+	struct Dictionary_ {
+		csKeyword *list;
+		Char name;
+		struct CMux_ mux;
+		};
+
+Char CMux_Diag(pointer cmux,char *name) {
+	CMux mux=cmux;
+	if (!name) name="CMux";
+	return Char_F(
+		"%s[%d], nel %d, empty %d, maxHop %d, pow %d, RB %d, flags %d, mask 0x%x, array %p, hasher %p",
+		name,
+		mux->count, mux->nel, mux->empty, mux->maxHop,
+		mux->pow, mux->rebuilding, mux->flags, mux->mask,
+		mux->array, mux->hasher);
+	}
+
+Char Dictionary_Diag(Dictionary dict) {
+	char *name=Dictionary_name(dict);
+	if (!name) name=kindO(dict);
+	CMux mux=(&dict->mux);
+	return CMux_Diag(mux,name);
+	}
+
+Char Array_Diag(Array array) {
+	return Char_F("%s[%d], nel %d, zeroIndex %d",kindO(array),array->count,array->nel,array->zerox);
+	}
+
 $boot() {
 	Version_register( "Coda-C",
 	Os(QVersion ", " QWebsite ", Copyright (c) " QCopyYears "  Stephen M. Jones, Affero GPL 3."
@@ -562,18 +591,6 @@ typedef Pointer OSig(AllKeys)(Obj dict) ;               sig_(AllKeys);
 typedef Char OSig(xmlTag)(Obj obj);                     sig_(xmlTag);
 
 #define class Dictionary
-
-	typedef struct csKeyword_ {
-		struct csKeyword_ *nxt;
-		pointer data;
-		char key[0];
-		} csKeyword;
-
-	struct Dictionary_ {
-		csKeyword *list;
-		Char name;
-		struct CMux_ mux;
-		};
 
 void $(dtor) {
 	if (_ mux.hasher) CMux_dtor(& _ mux);
@@ -672,7 +689,7 @@ method$(Char,Info) {
 	return Char_F("%s[%d] <%s>",kindO(self),nel,name);
 	}
 
-method$(Char,xmlTag) { return Os("dict"); }
+method$(Char,xmlTag) { return Os("dict"); (void)self; }
 
 method$(Char,ToDelimiter,int index) {
 	if (index==1 && Dictionary_name(self)) return Char_F("<%s>{",Dictionary_name(self));
@@ -722,10 +739,185 @@ method$(Char,Info) {
 method$(Char,ToString) { return Char_F("%s[%d]",kindO(self),Dictionary_get_count(self)); }
 
 #undef class
-	void Dictionary_auto(Dictionary dict) { }
-	bool DictHash_keyobj(Dictionary dict,char *key,pointer obj) { Die_("%s; is not defined.",__func__); }
-	bool DictHash_keydel(Dictionary dict,char *key) { Die_("%s; is not defined.",__func__); }
-	Obj DictHash_obj4key(Dictionary dict,char *key) {  Die_("%s; is not defined.",__func__); }
+
+	#define THRESHOLD 32
+
+void Dictionary_auto(Dictionary dict) {
+	if (dict->mux.hasher) return;
+	if (dict->mux.flags) return;
+	if (dict->mux.count >= THRESHOLD) {
+		Dictionary_hash_default(dict);
+		}
+	}
+
+int4 Dictionary_autoDisable(Dictionary dict,bool disable) {
+	dict->mux.flags=disable;
+	return(THRESHOLD);
+	}
+
+static int4 hash_djb2(const char *string) {
+	int4 hash=5381; const unsigned char *str=(const unsigned char *)string;
+	for(int4 cc;0!=(cc= *str++);) hash=((hash<<5)+hash)^cc;
+	return(hash);
+	}
+
+void Dictionary_hash_default(Dictionary dict) {
+	return Dictionary_hash(dict,hash_djb2);
+	}
+
+	void CMux_itor2(CMux ptr,int pow) ;
+
+void Dictionary_hash(Dictionary dict,int4 (*hasher)(const char *string)) {
+	if (dict->mux.hasher==hasher) return;
+	CMux_dtor(&dict->mux);
+	dict->mux.hasher=hasher;
+	if (!hasher) return;
+	Dictionary_hash_build(dict);
+	}
+
+	#define CMUXMINPOW2  4
+	#define CMUXMAXPOW2 30
+	#define CMUXMINNEL2 (1<<CMUXMINPOW2)
+
+void Dictionary_hash_build(Dictionary dict) {
+	CMux mux=(&dict->mux); Assert_(mux->hasher);
+	int need=( mux->count*1.25 + .5 );
+	int pow;
+	for(pow=CMUXMINPOW2;pow<CMUXMAXPOW2;++pow) {
+		int nel=(1<<pow);
+		if (nel>=need) break;
+		}
+	CMux_itor2(mux,pow);
+	int count=0;
+	for(csKeyword *pre=0,*ptr=dict->list;ptr;pre=ptr,ptr=ptr->nxt) {
+		++count;
+		char *key=ptr->key;
+		int4 hash=mux->hasher(key);
+		int j;
+		for(j=0;j<mux->nel;++j) {
+			int ix= (hash+j)&mux->mask;
+			keydata *ele=(&mux->array[ix]);
+			if (!ele->key) {
+				ele->key= ptr->key;
+				ele->data= pre;
+				if (j>mux->maxHop) mux->maxHop=j;
+				break;
+				}
+			}
+		if (j>=mux->nel) Die_("bug--out of room?");
+		}
+	dict->mux.count=count;
+	}
+
+static void DictHash_Check(Dictionary dict) {
+	CMux mux=(&dict->mux);
+	int eigth=mux->nel/8;
+	if ((mux->nel - mux->count - mux->empty < eigth) ||
+			(mux->nel>(CMUXMINNEL2) && mux->nel> 4*mux->count)) {
+		CMux_dtor(&dict->mux);
+		Dictionary_hash_build(dict);
+		}
+	}
+
+	#define DELETED ((pointer)1)
+
+	static int4 DictHash_keySlot(Dictionary dict,char *key) ;
+
+bool DictHash_keyobj(Dictionary dict,char *key,pointer obj) {
+	if (!obj) return DictHash_keydel(dict,key);
+	CMux mux=(&dict->mux); Assert_(mux->array); Assert_(key); Assert_(mux->hasher);
+	int4 hash=mux->hasher(key);
+	ekeep_container(obj,dict);
+	int freeslot=EOF;
+	for(int j=0;j<mux->nel;++j) {
+		int ix= (hash+j)&mux->mask;
+		keydata *ele=(&mux->array[ix]);
+		char *dict_key=ele->key;
+		if (!dict_key) {
+			if (freeslot!=EOF) { ele=(&mux->array[freeslot]); --mux->empty; }
+			++dict->mux.count;
+			csKeyword *ptr=alocC(sizeof(csKeyword)+cs_length(key)+1);
+			ptr->data=obj; cs_strcopy(ptr->key,key);
+			ptr->nxt=dict->list; dict->list=ptr;
+			ele->key= ptr->key;
+			ele->data= 0;
+			if (ptr->nxt) {
+				int nix=DictHash_keySlot(dict,ptr->nxt->key);
+						assert(mux->array[nix].data==0);
+				mux->array[nix].data=ptr;
+				}
+			if (j>mux->maxHop) mux->maxHop=j;
+			DictHash_Check(dict);
+			return(0);
+			}
+		ei (dict_key==DELETED) {
+			if (freeslot==EOF) freeslot=ix;
+			}
+		ei (cs_exact(dict_key,key)) {
+			csKeyword *ptr= (csKeyword*)(dict_key -offsetof(csKeyword,key));
+			etor_container(ptr->data,dict);
+			ptr->data=obj;
+			return(0);
+			}
+		}
+	Die_("hash full, dynamic expansion failed. key(%s), obj %p",key,obj);
+	}
+
+bool DictHash_keydel(Dictionary dict,char *key) {
+	CMux mux=(&dict->mux); Assert_(mux->array); Assert_(key); Assert_(mux->hasher);
+	int4 hash=mux->hasher(key);
+	for(int j=0;j<mux->nel;++j) {
+		int ix= (hash+j)&mux->mask;
+		keydata *ele=(&mux->array[ix]);
+		char *dict_key=ele->key;
+		if (!dict_key) return(0);
+		ei (dict_key==DELETED) ;
+		ei (cs_exact(dict_key,key)) {
+			csKeyword *ptr= (csKeyword*)(dict_key -offsetof(csKeyword,key));
+			etor_container(ptr->data,dict);
+			csKeyword *pre=ele->data;
+			if (!pre) dict->list=ptr->nxt;
+			  else      pre->nxt=ptr->nxt;
+			if (ptr->nxt) {
+				int nix=DictHash_keySlot(dict,ptr->nxt->key);
+					assert(mux->array[nix].data==ptr);
+				mux->array[nix].data=pre;
+				}
+			freeC(ptr); --dict->mux.count;
+			ele->key=DELETED; ++mux->empty;
+			ele->data= 0;
+			DictHash_Check(dict);
+			return(1);
+			}
+		}
+	return(0);
+	}
+
+static int4 DictHash_keySlot(Dictionary dict,char *key) {
+	CMux mux=(&dict->mux);
+	int4 hash=mux->hasher(key);
+	for(int j=0;j<mux->nel;++j) {
+		int ix= (hash+j)&mux->mask;
+		char *dictkey= mux->array[ix].key; if (!dictkey) break;
+		if (dictkey==key) return(ix);
+		}
+	Die_("can't find valid key(%s)?",key);
+	}
+
+Obj DictHash_obj4key(Dictionary dict,char *key) {
+	CMux mux=(&dict->mux); Assert_(mux->array);
+	int4 hash=mux->hasher(key);
+	for(int j=0;j<mux->nel;++j) {
+		int ix= (hash+j)&mux->mask;
+		keydata *ele=(&mux->array[ix]);
+		char *dict_key=ele->key; if (!dict_key) break;
+		if (dict_key!=DELETED && cs_exact(key,dict_key)) {
+			csKeyword *ptr= (csKeyword*)(dict_key -offsetof(csKeyword,key));
+			return(ptr->data);
+			}
+		}
+	return(0);
+	}
 
 Keyword Dictionary_scan(Dictionary dict) {
 	if (!dict) return(0);
@@ -801,7 +993,7 @@ method$(Char,Info) {
 	return Char_F("Keyword[%d+%d] {%s : %s}",classO(self)->kize,Root_count(self),_ word,msg);
 	}
 
-method$(Char,xmlTag) { return Os("keyword"); }
+method$(Char,xmlTag) { return Os("keyword"); (void)self; }
 
 method$(Char,ToString) {
 	cleanO Char msg=ToContainer(_ item);
@@ -842,8 +1034,8 @@ bool Memory_SecurityOn=1;
 
 void Memory_free(Obj obj) {
 	if (!obj) return;
-	CodaStructMeta *meta=obj2meta(obj); if (meta->metasize==0) return;
-	meta=obj2meta0(obj);
+	if (isOs(obj)) return;
+	CodaStructMeta *meta=obj2meta0(obj);
 	if (!meta->count) return;
 	int count= --meta->count;
 	if (count==0) {
@@ -877,30 +1069,28 @@ void Memory_clean(const void *vp) {
 
 CodaCLASS* Memory_class(Obj obj) {
 	if (!obj) return(&Isa_Void);
+	if (isOs(obj)) return(&Isa_ConstChar);
 	CodaStructMeta *meta=obj2meta(obj);
-	if (meta->metasize==0) return(&Isa_ConstChar);
 	if (!meta->clas) return(&Isa_Void);
 	return(meta->clas);
 	}
 
 int4 Memory_size(Obj obj) {
 	if (!obj) return(0);
-	CodaStructMeta *meta=obj2meta(obj);
-	if (meta->metasize==0) return cs_length(obj)+1;
-	return(meta->size);
+	if (isOs(obj)) return cs_length(obj)+1;
+	return obj2meta(obj)->size;
 	}
 
 int4 Memory_count(Obj obj) {
 	if (!obj) return(-1);
-	CodaStructMeta *meta=obj2meta(obj);
-	if (meta->metasize==0) return(0);
+	if (isOs(obj)) return(0);
 	return obj2meta0(obj)->count;
 	}
 
 CodaCLASS* Memory_reclass(Obj obj,CodaCLASS *clas) {
-	assert(obj);
+	Assert_(obj);
 	CodaStructMeta *meta=obj2meta(obj);
-	assert(meta->metasize);
+	Assert_(meta->metasize);
 	void *old=meta->clas; meta->clas=clas; return(old);
 	}
 
@@ -924,21 +1114,21 @@ static pointer Memory_pack(void *enclosed,int newsize,void *clas) {
 
  static Obj Memory_newOOR(CodaCLASS *clas,int count,int extra) {
 	if (!clas) Die_(">>>use alocO() instead of newO() to make VOID class objects!");
-	assert(clas!=NULL && extra>=0);
-	assert(count>=0);
+	Assert_(extra>=0);
+	Assert_(count>=0);
 	if (count==0 && clas->bits!=bits_Zerok)
 		Die_("You can't use count==0 for this class(%s). see: bits_Zerok",clas->kClass);
-	assert(clas->superNel>=1); assert(clas->size>0);
+	Assert_(clas->superNel>=1); Assert_(clas->size>0);
 	int size=count*clas->size,trans=0;
 	if (clas->kize) size=clas->kize+count;
 	int supNel=clas->superNel;
 	if (clas->bits==bits_Trans) {
-		size=0; trans=1; assert(count>=1 && supNel>=1);
+		size=0; trans=1;
 		if (supNel!=1 && count!=1)
 			Die_("You can't create multiple of Arrayed Classes(%d * %d)",supNel,count);
 		supNel*=count;
 		}
-	assert(size+extra<0x7FFFFF);
+	Assert_(size+extra<0x7FFFFF);
 	Obj obj=0;
 	if (clas->superClass && clas->superClass->bits!=bits_Root) {
 		if (count!=1 && !trans)	{
@@ -983,14 +1173,13 @@ CodaCLASS* baseClass(CodaCLASS* clas) {
 
 Obj Memory_objectToClass(Obj obj,CodaCLASS* newClass) {
 	if (!obj || !newClass)	return(obj);
+	if (isOs(obj)) return(obj);
 	CodaCLASS *clas=Memory_class(obj);
 	if (!clas)				return(obj);
 	if (clas==newClass)		return(obj);
 
 	CodaCLASS *base=baseClass(newClass);
-	CodaStructMeta *meta=obj2meta(obj);
-	if (meta->metasize==0) return(obj);
-	meta=obj2meta0(obj);
+	CodaStructMeta *meta=obj2meta0(obj);
 	for(CodaStructMeta *ptr=meta;ptr;ptr=Memory_metanext(ptr)) {
 		if (baseClass(ptr->clas)==base) return meta2obj(ptr);
 		}
@@ -999,8 +1188,8 @@ Obj Memory_objectToClass(Obj obj,CodaCLASS* newClass) {
 
 Obj Memory_superObject(Obj obj) {
 	if (obj) {
+		if (isOs(obj)) return(0);
 		CodaStructMeta *meta=obj2meta(obj);
-		if (meta->metasize==0) return(0);
 		meta=Memory_metanext(meta); if (!meta) return(0);
 		return meta2obj(meta);
 		}
@@ -1045,7 +1234,7 @@ method$(Char,Info) { return Char_F("Pointer[%d] aka void**",Pointer_count(self))
 
 method$(Char,ToDelimiter,int index) {
 	static Char da[]={ Os(", "), Os("<pointer>["), Os("]"), Os("?") }; return da[index&3];
-	}
+	(void)self; }
 
 method$(Char,ToStringSub,int index) { return Char_F("%p",self[index]); }
 
@@ -1082,7 +1271,7 @@ Char $(Info) {
 	  			return Char_F("Class:%s[%d][size=%d]%s%s",   class,     count,nel,sep,msg);
 	} $boot1(Info);
 
-method$(Char,get_name) { return(0); }
+method$(Char,get_name) { return(0); (void)self; }
 
 int $(get_count) {
 	CodaCLASS* clas=classO(self);
@@ -1122,15 +1311,15 @@ void codac_sig(pointer cmux,char *key,pointer data) {
 
 Obj Memory_normalize(Obj obj) {
 	if (!obj) return(obj);
-	CodaStructMeta *meta=obj2meta(obj); if (meta->metasize==0) return(obj);
-	meta=obj2meta0(obj);
-	return meta2obj(meta);
+	if (isOs(obj)) return(obj);
+	return meta2obj( obj2meta0(obj) );
 	}
 
 Obj Memory_spindle(Obj obj,CodaCLASS* newClass) {
 	if (!obj) return(0);
+	if (isOs(obj)) return(0);
 	CodaStructMeta *meta=obj2meta(obj);
-	if (meta->metasize==0 || !meta->clas) return(0);
+	if (!meta->clas) return(0);
 	CodaCLASS *base=baseClass(newClass);
 	    if (baseClass(meta->clas)==base) return(obj);
 	for(meta=obj2meta0(obj); meta; meta=Memory_metanext(meta)) {
@@ -1140,10 +1329,10 @@ Obj Memory_spindle(Obj obj,CodaCLASS* newClass) {
 	}
 
 void *ORespond3(Obj obj,char *sel,Obj *spindle,int noDie,CodaCLASS *superOf) {
-	CodaCLASS *clas=0; CodaStructMeta *meta=0; bool superfound=(superOf ? 0 : 1); Obj rootobj=obj;
+	CodaCLASS *clas=0; CodaStructMeta *meta=0; Obj rootobj=obj;
+	bool superfound=(superOf ? 0 : 1); bool clasOs=0;
 	if (obj) {
-		meta=obj2meta(obj);
-		if (meta->metasize==0) clas=(&Isa_ConstChar);
+		if (isOs(obj)) { clas=(&Isa_ConstChar); clasOs=1; }
 		  else {
 			meta=obj2meta0(obj);
 			obj=meta2obj(meta); clas=meta->clas;
@@ -1155,12 +1344,11 @@ void *ORespond3(Obj obj,char *sel,Obj *spindle,int noDie,CodaCLASS *superOf) {
 		if (superfound) { data=CMux_Data4Key(clas->classObject,sel); if (data) break; }
 		if (superOf==clas) superfound=1;
 		if (meta && clas->bits!=bits_Trans) {
-			if (meta->metasize==0) meta=0;
-			  else meta=Memory_metanext(meta);
+			meta=Memory_metanext(meta);
 			if (meta) obj=meta2obj(meta);
 			}
 		clas=clas->superClass;
-		if (!clas || !meta) {
+		if (!clas || (!meta && !clasOs)) {
 			if (clas && clas->bits==bits_Root) {
 				if (superfound) data=CMux_Data4Key(clas->classObject,sel);
 				if (data) { obj=rootobj; break; }
@@ -1241,7 +1429,7 @@ method$(Char,Info) {
 
 method$(int,get_count) { return sizeO(self); }
 
-method$(Char,get_name) { return(0); }
+method$(Char,get_name) { return(0); (void)self; }
 
 method$(Char,ToString) {
 	if (!self) return Os("<Null>");

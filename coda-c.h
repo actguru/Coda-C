@@ -1,5 +1,5 @@
 #pragma once
-/* www.coda-c.com  coda-c.h / Version 3.3
+/* www.coda-c.com  coda-c.h / Version 3.4
 
 Copyright (C) 2026 Stephen M. Jones
 
@@ -41,6 +41,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	#define $FORMAT12     __attribute__((format (coda_printf, 1, 2)))
 	#define $FORMAT23     __attribute__((format (coda_printf, 2, 3)))
 	#define $NORETURN     __attribute__((__noreturn__))
+	#define $UNUSED       __attribute__((unused))
 
 	#if     WIN32
 		#define coda_printf gnu_printf
@@ -125,6 +126,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 			&OBind1_2(Meta,CLASS).COData, \
 			(pointer)CodaClass_CUSTOM, \
 			(DTOR1)OBind1_2(CLASS,ekeep), \
+			0,0,0,0 \
 			}; \
 		static struct CodaPublicCORaw_ OBind1_2(Meta,CLASS)={{&OBind1_2(Isa,CLASS),"",CodaMetaSize},""}; \
 		CLASS OClass(CLASS)=(pointer)(&OBind1_2(Meta,CLASS).COData); \
@@ -210,6 +212,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	#define Dict_take Dictionary_takeKey
 	#define Os_(str) "\0\0" str
 	#define Os(str)			((Os_(str))+2)
+	#define isOs(obj) ({ const char *_os = (const char *)(obj); _os[-1]==0 && _os[-2]==0; })
 CodaClassDef(CArray,struct Array_,Root);
 	extern ConstChar sig_addObject;
 	extern ConstChar sig_subInt;
@@ -304,14 +307,10 @@ CodaClassDef(Void,void,0);
 	#define method$def(type,sig,...) \
 		static type $(sig,##__VA_ARGS__)
 
-	#define SubClassOk() static_assert(sizeat(class)%8==0,"subclass object wrong size?")
+	#define SubClassOk() static_assert(sizeat(class)%sizeof(void*)==0,"subclass object wrong size?")
 void clean_C(const void *vp);
 pointer alocC(int4 size);
 void freeC(pointer address);
-void alocC_accountForMalloc(pointer address);
-huge alocC_count(bool allocation,bool bytes);
-void alocC_reset(void);
-void alocC_counting(bool enable);
 extern double Array_FACTOR;
 void Array_removeBlock(Array self,int dix,int count);
 void Array_takeBlock(Array self,int index,int count,pointer block);
