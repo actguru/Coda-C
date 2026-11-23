@@ -22,7 +22,7 @@ Dictionary sample_employee() { // lets structure data in a Dictionary,
 	typedef void OSig$(JSON_out,FILE* os,int indent); // virtual signature
 
 int main() {
-	Dict empl=sample_employee();
+	cleanO Dict empl=sample_employee();
 	obj_(JSON_out,empl,stdout,0); // lets just output the data for now as JSON
 	printf("\n");
 	}

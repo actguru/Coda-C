@@ -19,19 +19,20 @@ method$(void,saySomething,char* greeting) { printf("%s\n", greeting); }
 
 #define class XyzShoutingPerson
 CodaClassZerosC();
-CodaClass(XyzShoutingPerson,short,XyzPerson); // unused 'short' storage - 2 bytes
+CodaClass(XyzShoutingPerson,huge,XyzPerson); // unused 'huge' storage - 4 bytes
 
 method$(void,saySomething,char* greeting) {
 	cleanO Char upper=Char_Value(greeting); cs_cap(upper); // cleanO: release 'upper' at scope end
 	super_(saySomething,self,upper); // virtual call to superclass
 	}
+SubClassOk();
 #undef class // XyzShoutingPerson
 
 int main() {
-	Obj ppp=newO(XyzPerson);
+	cleanO Obj ppp=newO(XyzPerson);
 	XyzPerson_sayHello(ppp);
 
-	Obj sss=newO(XyzShoutingPerson);
+	cleanO Obj sss=newO(XyzShoutingPerson);
 	XyzPerson_sayHello(sss);
 	}
 

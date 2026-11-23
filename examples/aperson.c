@@ -15,8 +15,8 @@ CodaClass(Person,struct Person_,Root);
 
 class Person_WithNameAge(char *name,int age)  {
 	Person self = newO(Person);
-	Person_set_name(self,"Alice");
-	Person_set_age( self,30);
+	Person_set_name(self,name);
+	Person_set_age( self,age);
 	return(self);
 	}
 

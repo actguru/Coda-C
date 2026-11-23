@@ -26,6 +26,7 @@ class Circle_new(Char color,double radius) {
 	_ radius=radius; // where #define _ self->
 	return(self);
 	}
+SubClassOk(); // alignment check
 #undef class // Circle
 
 	struct Rectangle_ { double width,height; };
@@ -41,6 +42,7 @@ class Rectangle_new(Char color,double width,double height) {
 	_ width=width; _ height=height;
 	return(self);
 	}
+SubClassOk(); // alignment check
 #undef class // Rectangle
 
 
@@ -52,8 +54,8 @@ void print_shape_details(Obj shape) { // This function accepts any subclass of S
 	}
 
  int main() {
-    Circle my_circle = Circle_new(Os("Blue"),5.0);
-    Obj my_rectangle = Rectangle_new(Os("Green"),4.0,6.0);
+    cleanO Circle my_circle = Circle_new(Os("Blue"),5.0);
+    cleanO Obj my_rectangle = Rectangle_new(Os("Green"),4.0,6.0);
 
     print_shape_details(my_circle);
     print_shape_details(my_rectangle);
