@@ -1,5 +1,6 @@
 // Sort input lines
 
+	#define CODA_BASIC 1 // remove macros
 	#include <coda-c.h>
 
 int compare(const void *aa,const void *bb) { return strcmp(*(char **)aa, *(char **)bb); }

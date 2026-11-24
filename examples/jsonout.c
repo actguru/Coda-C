@@ -1,5 +1,6 @@
 // Coda-C JSON serialization example
 
+	#define CODA_BASIC 1 // remove macros
 	#include <coda-c.h> // jsonout.c
 
 Dictionary sample_employee() { // lets structure data in a Dictionary,

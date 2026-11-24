@@ -1,4 +1,5 @@
 // Demonstrate "ToContainer()" and Object_Counter diagnostics
+	#define CODA_BASIC 1 // remove macros
 	#include <coda-c.h>
 
 #define class Crazy

@@ -1,4 +1,5 @@
 // Displaying: Classes, Signatures, and Versions
+	#define CODA_BASIC 1 // remove macros
 	#include <coda-c.h>
 
 int main() {

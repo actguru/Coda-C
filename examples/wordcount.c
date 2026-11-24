@@ -1,5 +1,6 @@
 // Report the number of times each word occurs
 
+	#define CODA_BASIC 1 // remove macros
 	#include <coda-c.h>
 	int cc_toLow(int c)   { return( c>='A' && c<='Z' ? c+32 : c); }
 

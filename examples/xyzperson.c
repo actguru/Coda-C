@@ -1,4 +1,6 @@
 // Calling superclass virtual functions
+
+	#define CODA_BASIC 1 // remove macros
 	#include <coda-c.h>
 	int cc_toCap(int c)    { return( c>='a' && c<='z' ? c-32 : c); }
 	void cs_cap(char *str) { while(*str) { *str =cc_toCap(*str); ++str; } }
@@ -10,7 +12,7 @@ CodaClassZerosC();
 CodaClass(XyzPerson,char,Root); // unused 'char' storage - 1 byte
 
 // void XyzPeson_sayHello(XyzPerson self) { ... } // generate this function
-void $(sayHello) { obj_(saySomething,self,"Hello, world!"); } // virtual call
+void function$(sayHello) { obj_(saySomething,self,"Hello, world!"); } // virtual call
 
 // Generate this function and register it as virtual function for this class.
 // static void XyzPeson_saySomething(XyzPerson self,char* greeting) { ... }
