@@ -1,5 +1,5 @@
 #pragma once
-/* www.coda-c.com  coda-c.h / Version 3.4
+/* www.coda-c.com  coda-c.h / Version 3.5
 
 Copyright (C) 2026 Stephen M. Jones
 
@@ -27,6 +27,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	typedef struct tm struct_tm;
 	#include <stdio.h>
 	#include <assert.h>
+	#define Assert_(e) ((void)((e)?0:Die_Object(Char_F("%s: !True(%s)",__func__,#e),1)))
 
 	typedef void*     Obj;
 	typedef void*     pointer;
@@ -42,8 +43,10 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	#define $FORMAT23     __attribute__((format (coda_printf, 2, 3)))
 	#define $NORETURN     __attribute__((__noreturn__))
 	#define $UNUSED       __attribute__((unused))
+	#define $DEPRECATED   __attribute__((deprecated))
+	#define $RETNONZERO   __attribute__((returns_nonnull))
 
-	#if     WIN32
+	#if    _WIN32
 		#define coda_printf gnu_printf
 	#elif __linux__
 		#define LINUX 1
@@ -143,7 +146,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	#define cs_blockFill(dest,chr,nel) memset(dest,chr,nel)
 	#define cs_blockCmp(a,b,nel) memcmp(a,b,nel)
 	#define cs_blockZero(addr,nel) cs_blockFill(addr,0,nel)
-	#define alocS(size)  cs_blockZero(alloca(size),size);
+	#define alocS(size) ({ size_t _sz=(size); void *_ptr=alloca(_sz); cs_blockZero(_ptr,_sz); _ptr; })
 #define CODA_shift(                          _1,_2,_3,_4,_5,_6,_7,_8,_9, N ,...) N
 #define CODA_pad(...) CODA_shift(__VA_ARGS__,_9,_8,_7,_6,_5,_4,_3,_2,_1,_0)
 #define OBind123_(one,two,three) one##two##three
@@ -184,18 +187,20 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 #define CodaClass_Zerok() enum { OBind1_2M(class,bits)=bits_Zerok }
 #define CodaClassTransC() CodaClassZeros(dtor,itor,kize,etor,ekeep); CodaClass_Trans()
 
+#if !CODA_BASIC
 	#define ei else if
 	#define $(sig,...) OBind1_2M(class,sig)(class self,##__VA_ARGS__)
 	#define _$(sig,...) OBind1_2M(class,sig)(self,##__VA_ARGS__)
 	#define _$2(sig,...) OBind1_2M(class,sig)(self,__VA_ARGS__)
 	#define _ self->
+#endif
 
 	#define setO(var,obj) ({ __auto_type _vp=(&var);__auto_type _obj=obj;keepO(_obj);freeO(*_vp);*_vp=_obj; })
-	#define setO_take(var,obj) ({ __auto_type _vp=(&var); freeO(*_vp); *_vp=obj; })
+	#define setO_take(var,obj) ({ __auto_type _vp=(&var);__auto_type _obj=obj;       freeO(*_vp);*_vp=_obj; })
 
 	#define getter$(type,var,body) type $(var) { return(body); }
 	#define setter$(type,var,body) void $(OBind1_2(set,var),type value) { body; }
-	#define self$  ({ class ooo=spindleO(self,&OBind1_2M(Isa,class)); assert(ooo); ooo; })
+	#define self$  ({ class ooo=spindleO(self,&OBind1_2M(Isa,class)); Assert_(ooo); ooo; })
 	#define property$(type,var,body1,body2) getter$(type,var,body1); setter$(type,var,body2)
 
 	#define property$_(type,var) property$(type,var,self->var ,self->var=value)
@@ -245,7 +250,7 @@ CodaClassDef(Void,void,0);
 	typedef Obj  OSig(addObject)(Obj array,Obj obj) ;
 	typedef Obj  OSig(subInt)(Obj array,int ix) ;
 	typedef int  OSig(removeObject)(Obj array,Obj obj) ;
-	typedef void OSig(removeLast)(Obj array) ;
+	typedef bool OSig(removeLast)(Obj array) ;
 	typedef void OSig(removeAll)(Obj array) ;
 	typedef Char OSig(ToDelimiter)(Obj container,int index) ;
 	typedef Char OSig(ToStringSub)(Obj container,int index) ;
@@ -268,7 +273,7 @@ CodaClassDef(Void,void,0);
 	#define Dict_sub Dictionary_subKey
 	#define Dictionary_name Dictionary_get_name
 	#define Dictionary_keywordFromWord(charptr)   ((Keyword)(charptr - offsetof(struct Keyword_,word) ))
-	struct Keyword_ { Obj item; char word[0]; };
+	struct Keyword_ { Obj item; char word[]; };
 	#define cleanO 				const $CLEANUP(Memory_clean)
 	#define	newO(class)			Memory_newO(OClass(class),1)
 	#define	newOC(class,cnt)	Memory_newO(OClass(class),cnt)
@@ -290,28 +295,30 @@ CodaClassDef(Void,void,0);
 	#define O_Responds(obj,sig) ORespond3(obj,sig,0,1,0)
 	#define OResponds(obj,SEL)  ORespond3(obj,sig_##SEL,0,1,0)
 	#define obj_(SEL,obj,...) \
-		({ Obj ooo=0; void *fun=ORespond3(obj,sig_##SEL,&ooo,0,0); ((SEL)fun)(ooo,##__VA_ARGS__); })
+		({ Obj _oo=0; void *_fn=ORespond3(obj,sig_##SEL,&_oo,0,0); ((SEL)_fn)(_oo,##__VA_ARGS__); })
 
 	#define OHasSuper(obj,SEL)  ORespond3(obj,sig_##SEL,0,1,&OBind1_2M(Isa,class))
 	#define super_(SEL,obj,...) \
-		({ Obj ooo=0; void *fun=ORespond3(obj,sig_##SEL,&ooo,0,&OBind1_2M(Isa,class)); \
-		((SEL)fun)(ooo,##__VA_ARGS__); })
+		({ Obj _oo=0; void *_fn=ORespond3(obj,sig_##SEL,&_oo,0,&OBind1_2M(Isa,class)); \
+		((SEL)_fn)(_oo,##__VA_ARGS__); })
 
 	#define $boot1(sigy) static $CONSTRUCTOR void $class(__LINE__)(void) { CodaSig(sigy); }
 
+ #define function$(sig,...) OBind1_2M(class,sig)(class self,##__VA_ARGS__)
+
 	#define method$(type,sig,...) \
-		static type $(sig,##__VA_ARGS__); \
+		static type function$(sig,##__VA_ARGS__); \
 		$boot1(sig); \
-		static type $(sig,##__VA_ARGS__)
+		static type function$(sig,##__VA_ARGS__)
 
 	#define method$def(type,sig,...) \
-		static type $(sig,##__VA_ARGS__)
+		static type function$(sig,##__VA_ARGS__)
 
 	#define SubClassOk() static_assert(sizeat(class)%sizeof(void*)==0,"subclass object wrong size?")
 void clean_C(const void *vp);
-pointer alocC(int4 size);
+$RETNONZERO pointer allocC(size_t size);
 void freeC(pointer address);
-extern double Array_FACTOR;
+$DEPRECATED pointer alocC(int4 size);
 void Array_removeBlock(Array self,int dix,int count);
 void Array_takeBlock(Array self,int index,int count,pointer block);
 int Array_get_count(Array self);
@@ -324,7 +331,7 @@ Obj Array_insertAt(Array self,int index,Obj obj);
 void Array_removeAt(Array self,int dix);
 Obj Array_addObject(Array self,Obj obj);
 void Array_takeObject(Array self,Obj $CONSUMED obj);
-void Array_removeLast(Array self);
+bool Array_removeLast(Array self);
 Obj Array_replaceAt(Array self,int ix,Obj obj);
 int Array_removeObject(Array self,Obj object);
 void Array_removeAll(Array self);
@@ -360,7 +367,7 @@ void Dictionary_takeKey(Dictionary self,char *key,Obj $CONSUMED obj);
 void Dictionary_auto(Dictionary dict);
 int4 Dictionary_autoDisable(Dictionary dict,bool disable);
 void Dictionary_hash_default(Dictionary dict);
-void Dictionary_hash(Dictionary dict,int4 (*hasher)(const char *string));
+void Dictionary_hash(Dictionary dict,uint32_t (*hasher)(const char *string));
 void Dictionary_hash_build(Dictionary dict);
 bool DictHash_keyobj(Dictionary dict,char *key,pointer obj);
 bool DictHash_keydel(Dictionary dict,char *key);

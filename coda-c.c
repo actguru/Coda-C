@@ -34,11 +34,9 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 	#include <stdio.h>
 	static_assert(EOF==(-1),"EOF has a bad value.");
 
-	#define Assert_(e) ((void)((e)?0:Die_Object(Char_F("%s: !True(%s)",__func__,#e),1)))
-
 	#define QWebsite "www.coda-c.com"
 	#define QCopyYears	"2026"
-	#define QVersion	"3.4"
+	#define QVersion	"3.5"
 
 	#include "./coda-c.h"
 Obj CArray_insertAt(CArray self,int index,Obj obj);
@@ -58,9 +56,9 @@ extern CDictionary Version_dictionary_dict;
 
 void clean_C(const void *vp) { freeC(*(void **)vp); }
 
-pointer alocC(int4 size) {
+$RETNONZERO pointer allocC(size_t size) {
 	pointer address=calloc(1,size);
-	if (!address) Die_Object(Os("alocC; out of memory!"),1);
+	if (!address) Die_Object(Os("allocC; out of memory!"),1);
 	return(address);
 	}
 
@@ -68,7 +66,13 @@ void freeC(pointer address) {
 	free(address);
 	}
 
-double Array_FACTOR=1.60;
+$DEPRECATED pointer alocC(int4 size) {
+	pointer address=calloc(1,size);
+	if (!address) Die_Object(Os("alocC; out of memory!"),1);
+	return(address);
+	}
+
+static double Array_FACTOR=1.60;
 
 #define class CArray
 
@@ -87,15 +91,10 @@ method$(Char,Info) {
 
 static int count2nel(int count) {
 	if (count<32) count=32;
-	int nel=(int)llround(count*Array_FACTOR); assert(nel>count+3);
+	int nel=(int)llround(count*Array_FACTOR); Assert_(nel>count+3);
 	return(nel);
 	}
 	#define eleAddr(ptr,index) (ptr->alla + ptr->zerox + index)
-
-static void C_Array_Release(Array self,int start,int nel) {
-	Pointer vec=(void *)eleAddr(self,start);
-	for(int j=nel-1;j>=0;--j) etor_container(vec[j],self);
-	}
 
 static void CArray_copyBlock(CArray self,int dix,int count,Pointer block) {
 	Pointer pdest=eleAddr(self,dix);
@@ -125,19 +124,28 @@ static void CArray_Smaller(CArray dest) {
 void Array_removeBlock(Array self,int dix,int count) {
 	if (count<1) return;
 	Assert_(dix>=0 && dix+count<=_ count);
-	C_Array_Release(self,dix,count);
+	Pointer vec=eleAddr(self,dix);
+	Pointer delayed=( count==1 ? vec[0] : Pointer_NewBlock(0,count,vec) );
+
 	if (dix==0)				_ zerox+=count;
 	ei (dix+count==_ count)	;
 	else CArray_copyBlock(self,dix,_ count-dix-count,eleAddr(self,dix+count));
 	_ count-=count;
 	CArray_Smaller(self);
+
+	if (count==1) etor_container(delayed,self);
+	  else {
+		for(int j=count-1;j>=0;--j)
+			etor_container(delayed[j],self);
+		freeO(delayed);
+		}
 	}
 
 static void CArray_Upgrade(CArray dest,int dix,int count,Pointer block,$UNUSED char *msg) {
 	int capa=(int)llround((dest->count+count)*Array_FACTOR);
-	cleanO CArray grade=CArray_NewCap(capa); assert(grade->nel>dest->count+count);
+	cleanO CArray grade=CArray_NewCap(capa); Assert_(grade->nel>dest->count+count);
 		grade->count=dest->count+count;
-		grade->zerox=(grade->nel - grade->count)/3; assert(grade->zerox>=1);
+		grade->zerox=(grade->nel - grade->count)/3; Assert_(grade->zerox>=1);
 	CArray_copyBlock(grade,        0,dix,eleAddr(dest,0));
 	CArray_copyBlock(grade,      dix,count,block);
 	CArray_copyBlock(grade,dix+count,dest->count-dix,eleAddr(dest,dix));
@@ -191,17 +199,18 @@ method$(Char,ToString) { return Char_F("%s[%d]",kindO(self),_ count); }
 #define class Array
 
 void $(dtor) {
-	freeO(_ name); _ name=0;
-	C_Array_Release(self,0,_ count);
+	Pointer vec=eleAddr(self,0);
+	for(int j= _ count-1;j>=0;--j) etor_container(vec[j],self);
 	freeC(_ alla);
+	freeO(_ name); _ name=0;
 	}
 
 static void CArray_initCap(CArray self,int capacity) {
 	_ count=0;
 	_ nel=count2nel(_ count);
 	if (capacity && _ nel<capacity) _ nel=capacity;
-	_ zerox=(_ nel - _ count)/3; assert(_ zerox>=1);
-	_ alla=alocC(_ nel*sizeof(pointer));
+	_ zerox=(_ nel - _ count)/3; Assert_(_ zerox>=1);
+	_ alla=allocC(_ nel*sizeof(pointer));
 	}
 
 void $(itor) { CArray_initCap(self,0); }
@@ -224,7 +233,7 @@ pointer $(rawAddress) {
 typedef Obj  OSig(addObject)(Obj array,Obj obj) ;               sig_(addObject);
 typedef Obj  OSig(subInt)(Obj array,int ix) ;                   sig_(subInt);
 typedef int  OSig(removeObject)(Obj array,Obj obj) ;            sig_(removeObject);
-typedef void OSig(removeLast)(Obj array) ;                      sig_(removeLast);
+typedef bool OSig(removeLast)(Obj array) ;                      sig_(removeLast);
 typedef void OSig(removeAll)(Obj array) ;                       sig_(removeAll);
 typedef Char OSig(ToDelimiter)(Obj container,int index) ;       sig_(ToDelimiter);
 typedef Char OSig(ToStringSub)(Obj container,int index) ;       sig_(ToStringSub);
@@ -272,15 +281,19 @@ void $(takeObject,Obj $CONSUMED obj) {
 	CArray_insertAt(self,_$(get_count),obj);
 	}
 
-void $(removeLast) {
-	_$2(removeAt,_$(get_count)-1);
+bool $(removeLast) {
+	int4 nel=_$(get_count);
+	if (nel==0) return(0);
+	_$(removeAt,nel-1);
+	return(1);
 	}
 
 Obj $(replaceAt,int ix,Obj obj) {
 	Pointer ptr=Array_rawAddress(self); Assert_(ix>=0 && ix<Array_count(self));
 		ekeep_container(obj,self);
-		etor_container(ptr[ix],self);
+		Obj old=ptr[ix];
 		ptr[ix]=obj;
+		etor_container(old,self);
 	return(obj);
 	}
 
@@ -414,7 +427,7 @@ void Class_register(Obj obj) {
 		keydata *array;
 		int4 nel,mask,count,empty;
 		int4 pow,rebuilding,maxHop,flags;
-		int4 (*hasher)(const char *key);
+		uint32_t (*hasher)(const char *key);
 		char resv[64-sizeof(pointer)-8*sizeof(int4)-sizeof(pointer)];
 		} *CMux;
 
@@ -427,7 +440,7 @@ void Class_register(Obj obj) {
 	mux->pow=pow;
 	mux->nel=(1<<pow);
 	mux->mask=(mux->nel -1);
-	mux->array=alocC(sizeof(keydata)*mux->nel);
+	mux->array=allocC(sizeof(keydata)*mux->nel);
 	mux->empty=0;
 	mux->maxHop=0;
 	}
@@ -454,7 +467,7 @@ void *CMux_Data4Key(pointer cmux,char *key) {
 	}
 
 static void CMux_Rebuild(CMux mux,int count) {
-	assert(!mux->rebuilding);
+	Assert_(!mux->rebuilding);
 	int pow=0;
 	for(pow=CMUXMINPOW;pow<CMUXMAXPOW;++pow)  {
 		int nel=(1<<pow);
@@ -506,7 +519,7 @@ void *CMux_KeyData(pointer cmux,char *key,pointer data) {
 	typedef struct csKeyword_ {
 		struct csKeyword_ *nxt;
 		pointer data;
-		char key[0];
+		char key[];
 		} csKeyword;
 
 	struct Dictionary_ {
@@ -620,15 +633,17 @@ void $(setKey,char *key,Obj obj) {
 	csKeyword *ptr;
 	for(ptr=_ list;ptr;ptr=ptr->nxt) { if (cs_exact(key,ptr->key)) break; }
 	if (ptr) {
-		etor_container(ptr->data,self);
+		Obj old=ptr->data;
+		ptr->data=obj;
+		etor_container(old,self);
 		}
 	  else {
 		++_ mux.count;
-		ptr=alocC(sizeof(csKeyword)+cs_length(key)+1);
+		ptr=allocC(sizeof(csKeyword)+cs_length(key)+1);
 			cs_strcopy(ptr->key,key);
 		ptr->nxt=_ list; _ list=ptr;
+		ptr->data=obj;
 		}
-	ptr->data=obj;
 	_$(auto);
 	}
 
@@ -637,10 +652,11 @@ bool $(removeKey,char *key) {
 	csKeyword *ptr,*pre;
 	for(pre=0,ptr=_ list;ptr;pre=ptr,ptr=ptr->nxt) { if (cs_exact(key,ptr->key)) break; }
 	if (ptr) {
-		etor_container(ptr->data,self);
 		if (!pre) _ list=ptr->nxt;
 		  else	  pre->nxt=ptr->nxt;
-		freeC(ptr); --_ mux.count;
+		--_ mux.count;
+		etor_container(ptr->data,self);
+		freeC(ptr);
 		return(1);
 		}
 	return(0);
@@ -655,10 +671,11 @@ int $(removeObject,Obj obj) {
 				if (!DictHash_keydel(self,ptr->key)) Die_("Internal error, hash delete failed!");
 				}
 			  else {
-				etor_container(ptr->data,self);
 				if (!pre) _ list=ptr->nxt;
 				  else	  pre->nxt=ptr->nxt;
-				freeC(ptr); --_ mux.count;
+				--_ mux.count;
+				etor_container(ptr->data,self);
+				freeC(ptr);
 				}
 			++removed;
 			ptr=pre;
@@ -755,9 +772,9 @@ int4 Dictionary_autoDisable(Dictionary dict,bool disable) {
 	return(THRESHOLD);
 	}
 
-static int4 hash_djb2(const char *string) {
-	int4 hash=5381; const unsigned char *str=(const unsigned char *)string;
-	for(int4 cc;0!=(cc= *str++);) hash=((hash<<5)+hash)^cc;
+static uint32_t hash_djb2(const char *string) {
+	uint32_t hash=5381; const unsigned char *str=(const unsigned char *)string;
+	for(uint32_t cc;0!=(cc= *str++);) hash=((hash<<5)+hash)^cc;
 	return(hash);
 	}
 
@@ -767,7 +784,7 @@ void Dictionary_hash_default(Dictionary dict) {
 
 	void CMux_itor2(CMux ptr,int pow) ;
 
-void Dictionary_hash(Dictionary dict,int4 (*hasher)(const char *string)) {
+void Dictionary_hash(Dictionary dict,uint32_t (*hasher)(const char *string)) {
 	if (dict->mux.hasher==hasher) return;
 	CMux_dtor(&dict->mux);
 	dict->mux.hasher=hasher;
@@ -781,7 +798,7 @@ void Dictionary_hash(Dictionary dict,int4 (*hasher)(const char *string)) {
 
 void Dictionary_hash_build(Dictionary dict) {
 	CMux mux=(&dict->mux); Assert_(mux->hasher);
-	int need=( mux->count*1.25 + .5 );
+	int need=( mux->count*1.50 + .5 );
 	int pow;
 	for(pow=CMUXMINPOW2;pow<CMUXMAXPOW2;++pow) {
 		int nel=(1<<pow);
@@ -792,7 +809,7 @@ void Dictionary_hash_build(Dictionary dict) {
 	for(csKeyword *pre=0,*ptr=dict->list;ptr;pre=ptr,ptr=ptr->nxt) {
 		++count;
 		char *key=ptr->key;
-		int4 hash=mux->hasher(key);
+		uint32_t hash=mux->hasher(key);
 		int j;
 		for(j=0;j<mux->nel;++j) {
 			int ix= (hash+j)&mux->mask;
@@ -811,7 +828,7 @@ void Dictionary_hash_build(Dictionary dict) {
 
 static void DictHash_Check(Dictionary dict) {
 	CMux mux=(&dict->mux);
-	int eigth=mux->nel/8;
+	int eigth=mux->nel/4;
 	if ((mux->nel - mux->count - mux->empty < eigth) ||
 			(mux->nel>(CMUXMINNEL2) && mux->nel> 4*mux->count)) {
 		CMux_dtor(&dict->mux);
@@ -826,7 +843,7 @@ static void DictHash_Check(Dictionary dict) {
 bool DictHash_keyobj(Dictionary dict,char *key,pointer obj) {
 	if (!obj) return DictHash_keydel(dict,key);
 	CMux mux=(&dict->mux); Assert_(mux->array); Assert_(key); Assert_(mux->hasher);
-	int4 hash=mux->hasher(key);
+	uint32_t hash=mux->hasher(key);
 	ekeep_container(obj,dict);
 	int freeslot=EOF;
 	for(int j=0;j<mux->nel;++j) {
@@ -836,14 +853,14 @@ bool DictHash_keyobj(Dictionary dict,char *key,pointer obj) {
 		if (!dict_key) {
 			if (freeslot!=EOF) { ele=(&mux->array[freeslot]); --mux->empty; }
 			++dict->mux.count;
-			csKeyword *ptr=alocC(sizeof(csKeyword)+cs_length(key)+1);
+			csKeyword *ptr=allocC(sizeof(csKeyword)+cs_length(key)+1);
 			ptr->data=obj; cs_strcopy(ptr->key,key);
 			ptr->nxt=dict->list; dict->list=ptr;
 			ele->key= ptr->key;
 			ele->data= 0;
 			if (ptr->nxt) {
 				int nix=DictHash_keySlot(dict,ptr->nxt->key);
-						assert(mux->array[nix].data==0);
+					Assert_(mux->array[nix].data==0);
 				mux->array[nix].data=ptr;
 				}
 			if (j>mux->maxHop) mux->maxHop=j;
@@ -855,8 +872,9 @@ bool DictHash_keyobj(Dictionary dict,char *key,pointer obj) {
 			}
 		ei (cs_exact(dict_key,key)) {
 			csKeyword *ptr= (csKeyword*)(dict_key -offsetof(csKeyword,key));
-			etor_container(ptr->data,dict);
+			Obj oldobj=ptr->data;
 			ptr->data=obj;
+			etor_container(oldobj,dict);
 			return(0);
 			}
 		}
@@ -865,7 +883,7 @@ bool DictHash_keyobj(Dictionary dict,char *key,pointer obj) {
 
 bool DictHash_keydel(Dictionary dict,char *key) {
 	CMux mux=(&dict->mux); Assert_(mux->array); Assert_(key); Assert_(mux->hasher);
-	int4 hash=mux->hasher(key);
+	uint32_t hash=mux->hasher(key);
 	for(int j=0;j<mux->nel;++j) {
 		int ix= (hash+j)&mux->mask;
 		keydata *ele=(&mux->array[ix]);
@@ -874,19 +892,20 @@ bool DictHash_keydel(Dictionary dict,char *key) {
 		ei (dict_key==DELETED) ;
 		ei (cs_exact(dict_key,key)) {
 			csKeyword *ptr= (csKeyword*)(dict_key -offsetof(csKeyword,key));
-			etor_container(ptr->data,dict);
+			Obj oldobj=ptr->data;
 			csKeyword *pre=ele->data;
 			if (!pre) dict->list=ptr->nxt;
 			  else      pre->nxt=ptr->nxt;
 			if (ptr->nxt) {
 				int nix=DictHash_keySlot(dict,ptr->nxt->key);
-					assert(mux->array[nix].data==ptr);
+					Assert_(mux->array[nix].data==ptr);
 				mux->array[nix].data=pre;
 				}
 			freeC(ptr); --dict->mux.count;
 			ele->key=DELETED; ++mux->empty;
 			ele->data= 0;
 			DictHash_Check(dict);
+			etor_container(oldobj,dict);
 			return(1);
 			}
 		}
@@ -895,7 +914,7 @@ bool DictHash_keydel(Dictionary dict,char *key) {
 
 static int4 DictHash_keySlot(Dictionary dict,char *key) {
 	CMux mux=(&dict->mux);
-	int4 hash=mux->hasher(key);
+	uint32_t hash=mux->hasher(key);
 	for(int j=0;j<mux->nel;++j) {
 		int ix= (hash+j)&mux->mask;
 		char *dictkey= mux->array[ix].key; if (!dictkey) break;
@@ -906,7 +925,7 @@ static int4 DictHash_keySlot(Dictionary dict,char *key) {
 
 Obj DictHash_obj4key(Dictionary dict,char *key) {
 	CMux mux=(&dict->mux); Assert_(mux->array);
-	int4 hash=mux->hasher(key);
+	uint32_t hash=mux->hasher(key);
 	for(int j=0;j<mux->nel;++j) {
 		int ix= (hash+j)&mux->mask;
 		keydata *ele=(&mux->array[ix]);
@@ -1009,6 +1028,7 @@ Obj $(get_item) { return(_ item); }
 	#define alocOCE(sz,cl,ex)	Memory_aloc(sz,cl,ex)
 
 	static_assert(CodaMetaSize==sizeof(CodaStructMeta),"MetaSize Error.");
+	static_assert(sizeof(struct CodaPublicMeta_)==sizeof(CodaStructMeta),"MetaSize Error 2.");
 
 Obj Memory_alocO(int size) { return Memory_aloc(size,0,0); }
 
@@ -1016,7 +1036,7 @@ _Atomic huge Object_Counter=0;
 
 Obj Memory_aloc(int size,CodaCLASS *clas,int extra) {
 	if (size<0) Die_("size %d ? class: %s",size,(clas ? clas->kClass : "?ZERO?"));
-	CodaStructMeta *first=alocC(extra+CodaMetaSize+size);
+	CodaStructMeta *first=allocC(extra+CodaMetaSize+size);
 	CodaStructMeta *meta=first; if (extra) meta= (CodaStructMeta *) ( ((char *)first) + extra);
 	meta->metasize=extra+CodaMetaSize;
 	meta->size=size;
@@ -1048,7 +1068,7 @@ void Memory_free(Obj obj) {
 				clas=clas->superClass;
 				}
 			}
-		assert(!ptr);
+		Assert_(!ptr);
 		if (Memory_SecurityOn) cs_blockZero(meta,Memory_totalMeta0Size(meta));
 		freeC(meta);
 		--Object_Counter;
@@ -1098,7 +1118,7 @@ CodaCLASS* Memory_reclass(Obj obj,CodaCLASS *clas) {
 int Memory_align(int pow2) { int old=pow2align; pow2align=pow2; return(old); }
 
 static pointer Memory_pack(void *enclosed,int newsize,void *clas) {
-	assert(enclosed && newsize>0); assert(pow2align==0 || newsize%pow2align==0);
+	Assert_(enclosed && newsize>0); Assert_(pow2align==0 || newsize%pow2align==0);
 	CodaStructMeta* eeta=obj2meta(enclosed);
 	int avail= eeta->metasize - 2*CodaMetaSize;
 	if (newsize>avail) Die_("Internal Error: newsize %d, avail %d",newsize,avail);
@@ -1159,7 +1179,7 @@ struct CodaStructMeta_ *Memory_metanext( struct CodaStructMeta_ *meta) {
 	int Memory_totalMeta0Size(CodaStructMeta *meta) {
 		int j=0,total=0;
 		for(j=0;meta && j<CodaMaxMeta;meta=Memory_metanext(meta),++j) { total+=meta->size+CodaMetaSize; }
-		assert(j<CodaMaxMeta);
+		Assert_(j<CodaMaxMeta);
 		return(total);
 		}
 

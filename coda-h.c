@@ -159,7 +159,6 @@ Void Void_FromFile(char *path);
 void zdtclt16(char *a);
 	#include <sys/stat.h>
 
-	#define Assert_ assert
 	#define codaMsg Msg_
 
 int chpospar(char c,char *a) {
@@ -1435,7 +1434,7 @@ Obj codaStatic(char *str,$UNUSED char *srcfile,$UNUSED int lno,$UNUSED char *org
 	if (!blob) OAbort("codaStatic: Can't read(%s)",file);
 	int size=sizeO(blob); if (size<1) OAbort("empty file(%s)?",file);
 
-	FILE *os=ssrcos(); assert(os);
+	FILE *os=ssrcos(); Assert_(os);
 
 	printDefs("extern ConstChar %s;  // Static[%d]\n",name,size);
 	printDefs("extern int %s_length; // Static[%d]\n",name,size);
