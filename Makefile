@@ -1,6 +1,6 @@
 # Apple, Linux, Windows (has install issues) # 08/15/2026
 
-VERSION = 3.5
+VERSION = 3.6
 MAJOR   = 3
 COMPAT  = 3.3
 

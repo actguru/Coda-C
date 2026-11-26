@@ -36,7 +36,7 @@ along with Coda-C. If not, see <https://www.gnu.org/licenses/>.
 
 	#define QWebsite "www.coda-c.com"
 	#define QCopyYears	"2026"
-	#define QVersion	"3.5"
+	#define QVersion	"3.6"
 
 	#include "./coda-c.h"
 Obj CArray_insertAt(CArray self,int index,Obj obj);
@@ -124,8 +124,12 @@ static void CArray_Smaller(CArray dest) {
 void Array_removeBlock(Array self,int dix,int count) {
 	if (count<1) return;
 	Assert_(dix>=0 && dix+count<=_ count);
+
 	Pointer vec=eleAddr(self,dix);
-	Pointer delayed=( count==1 ? vec[0] : Pointer_NewBlock(0,count,vec) );
+	Obj single=0; Pointer delayed=0;
+	if (count==1) single=vec[0];
+	ei (classO(self)->etor) {
+		size_t size=count*sizeof(pointer); delayed=allocC(size); cs_blockCopy(delayed,vec,size); }
 
 	if (dix==0)				_ zerox+=count;
 	ei (dix+count==_ count)	;
@@ -133,11 +137,10 @@ void Array_removeBlock(Array self,int dix,int count) {
 	_ count-=count;
 	CArray_Smaller(self);
 
-	if (count==1) etor_container(delayed,self);
-	  else {
-		for(int j=count-1;j>=0;--j)
-			etor_container(delayed[j],self);
-		freeO(delayed);
+	if (count==1) etor_container(single,self);
+	ei (delayed) {
+		for(int j=count-1;j>=0;--j) etor_container(delayed[j],self);
+		freeC(delayed);
 		}
 	}
 
@@ -772,14 +775,24 @@ int4 Dictionary_autoDisable(Dictionary dict,bool disable) {
 	return(THRESHOLD);
 	}
 
-static uint32_t hash_djb2(const char *string) {
+/* static uint32_t hash_djb2(const char *string) {
 	uint32_t hash=5381; const unsigned char *str=(const unsigned char *)string;
 	for(uint32_t cc;0!=(cc= *str++);) hash=((hash<<5)+hash)^cc;
+	return(hash);
+	} */
+
+static uint32_t hash_FNVmix(const char *string) {
+	const unsigned char *str=(const unsigned char *)string;
+	uint32_t hash = 2166136261u;
+	for(uint32_t cc;0!=(cc= *str++);) { hash ^= cc;   hash *= 16777619u; }
+	hash ^= hash >> 16; hash *= 0x85ebca6bu;
+	hash ^= hash >> 13; hash *= 0xc2b2ae35u;
+	hash ^= hash >> 16;
 	return(hash);
 	}
 
 void Dictionary_hash_default(Dictionary dict) {
-	return Dictionary_hash(dict,hash_djb2);
+	return Dictionary_hash(dict,hash_FNVmix);
 	}
 
 	void CMux_itor2(CMux ptr,int pow) ;
@@ -1077,7 +1090,7 @@ void Memory_free(Obj obj) {
 
 Obj Memory_keep(Obj obj) {
 	if (!obj) return(obj);
-	if (!obj2meta(obj)->metasize) return(obj);
+	if (isOs(obj)) return(obj);
 	CodaStructMeta *meta=obj2meta0(obj);
 	if (meta->count) ++meta->count;
 	return(obj);
@@ -1109,8 +1122,8 @@ int4 Memory_count(Obj obj) {
 
 CodaCLASS* Memory_reclass(Obj obj,CodaCLASS *clas) {
 	Assert_(obj);
+	Assert_(!isOs(obj));
 	CodaStructMeta *meta=obj2meta(obj);
-	Assert_(meta->metasize);
 	void *old=meta->clas; meta->clas=clas; return(old);
 	}
 
